@@ -1,1 +1,3 @@
-"# R" 
+# R
+
+Training with R

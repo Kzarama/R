@@ -1,0 +1,11 @@
+---
+title: "practica1"
+author: "Kevin Zarama"
+date: "7/2/2021"
+output: html_document
+---
+
+```{r}
+
+```
+
