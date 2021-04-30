@@ -5,7 +5,19 @@ date: "7/2/2021"
 output: html_document
 ---
 
+# Preparar los datasets
+
 ```{r}
-
+library(readxl)
+NOTAS = read_excel("NOTAS.xlsx", sheet="Notas")
+SB11 = read_excel("NOTAS.xlsx", sheet="INFO_S11")
+# Merge the datasets
+BASE = merge.data.frame(NOTAS, SB11, by="Codigo", all.x=T)
+head(BASE)
 ```
+BASE$Nivel=factor(BASE$Nivel)
+head(BASE)
 
+BASE$Género=factor(BASE$Género)
+head(BASE)
+sapply(BASE, class)
