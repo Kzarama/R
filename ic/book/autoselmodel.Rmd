@@ -1,0 +1,157 @@
+---
+title: "autoselmode"
+author: "Kevin Zarama"
+date: "23/3/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+data <- read.table("DATOSautoSel.txt", header=TRUE)
+str(data)
+```
+```{r}
+head(data)
+```
+```{r}
+class(data)
+```
+```{r}
+sapply(data, class)
+```
+```{r}
+data2 <- data[,c(1:10, 26)]
+head(data2)
+```
+# Fuerza bruta
+```{r}
+model <- lm(y ~ ., data2)
+summary(model)
+```
+```{r}
+library(olsrr)
+models <- ols_step_all_possible(model)
+str(models)
+```
+```{r}
+library(ggplot2)
+plot(models)
+```
+```{r}
+models$mindex[which.max(models$adjr)]
+```
+```{r}
+models$n[which.max(models$adjr)]
+```
+```{r}
+models$predictors[which.max(models$adjr)]
+```
+```{r}
+models$mindex[which.min(models$aic)]
+```
+```{r}
+models$n[which.min(models$aic)]
+```
+```{r}
+models$predictors[which.min(models$aic)]
+```
+```{r}
+models$mindex[which.min(models$sbc)]
+```
+```{r}
+models$n[which.min(models$sbc)]
+```
+```{r}
+models$predictors[which.min(models$sbc)]
+```
+```{r}
+modelo1 <- lm(y ~ x1 + x2 + x3 + x4 + x5 + x9, data)
+modelo2 <- lm(y ~ x2 + x3 + x4 + x5, data)
+```
+```{r}
+summary(modelo1)
+```
+```{r}
+summary(modelo2)
+```
+```{r}
+library(AER)
+anova(modelo2, modelo1)
+```
+# Stepwise
+## stepwise forward regression
+```{r}
+library(leaps)
+fwd.model <- regsubsets(x=data[, 1:25], y=data[,26], method="forward", nvmax=25)
+```
+```{r}
+attributes(fwd.model)
+```
+```{r}
+plot(fwd.model, scale="adjr2", main="R^2 ajustado")
+```
+```{r}
+modelo3 <- lm(y ~ x1 + x2 + x3 + x4 + x5 + x8 + x9 + x10 + x17 + x19 + x20 + x21, data)
+summary(modelo3)
+```
+```{r}
+library(olsrr)
+fwd.model.2 <- ols_step_forward_p(model)
+fwd.model.2
+```
+```{r}
+modelo4 <- lm(y ~ x1 + x2 + x3 + x4 + x5 + x9 + x10 + x17 + x20, data)
+summary(modelo4)
+```
+```{r}
+fwd.model.3 <- ols_step_forward_aic(model)
+fwd.model.3
+```
+```{r}
+formula.modelo5 <- as.formula(paste("y ~ ", paste(fwd.model.3$predictors, collapse=" + "), sep=""))
+modelo5 <- lm(formula.modelo5, data)
+summary(modelo5)
+```
+## stepwise backward regression
+```{r}
+back.model <- regsubsets(x=data[, 1:25], y=data[, 26], nvmax=1000, method="backward")
+plot(back.model, scale="adjr2", main="R^2 ajustado")
+```
+
+```{r}
+back.model.2 <- ols_step_backward_p(model)
+back.model.2
+```
+```{r}
+modelo6 <- back.model.2$model
+summary(modelo6)
+```
+```{r}
+back.model.3 <- ols_step_backward_aic(model)
+back.model.3
+```
+```{r}
+modelo7 <- back.model.3$model
+summary(model)
+```
+## forward and backward (step regression)
+```{r}
+both.model <- regsubsets(x=data[, 1:25], y=data[,26], nvmax=1000, method="seqrep")
+plot(both.model, scale="adjr2", main="R^2 ajustado")
+```
+```{r}
+modelo8 <- lm(y ~ x1 + x2 + x3 + x4 + x5 + x8 + x9 + x10 + x17 + x20 + x21, data)
+summary(modelo8)
+```
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,201 @@
+---
+title: "Parcial final - parte practica"
+author: "Kevin Zarama"
+date: "16/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+library(leaps)
+library(olsrr)
+library(lmtest)
+library(skedastic)
+library(car)
+library(caret)
+```
+
+Carga de datos
+
+```{r}
+datos <- na.omit(read.csv("datos.orginales.csv"))
+```
+
+Explicacion de las variables usadas en el modelo.
+
+- int: tasa de interés hipotecaria (en decimales)
+- precio.Metro2.casa: precio promedio del metro cuadrado de las casas en el vecindario al momento de la venta en millones de pesos
+- precio.Metro2.apart: precio promedio del metro cuadrado de los apartamentos en el vecindario
+- n.banos: número de baños en el inmueble
+- n.medio.banos: número de medio-baños (sin ducha) en el inmueble
+- n.hab: número de habitaciones en el inmueble
+- zona: zona dónde se encuentra ubicado el inmueble 1= sur, 2= norte, 3 = oriente, 4 = occidente, 5 = centro
+- n.parqueaderos: número de parqueaderos en el inmueble
+- tipo.inmueble: tipo de inmueble. apartamento (0) casa (1)
+- m.cuadra: metros cuadrados del inmueble
+- km.parque: distancia al parque más cercano (en km)
+- km.centrocom: distancia al centro comercial más cercano (en km)
+- km.estadio distancia al estadio de fútbol mas grande de la ciudad (en km).
+- Valor.Venta: Valor de la transacción del inmueble (en millones de pesos)
+
+```{r}
+head(datos)
+```
+
+Se procedera a eliminar la columna 1, ya que esta corresponde a el orden de los datos y no tiene relevancia para esto.
+
+```{r}
+datos <- datos[, -1]
+```
+
+```{r}
+head(datos)
+```
+
+El tamaño de la muestra de los datos
+
+```{r}
+dim(datos)
+```
+
+Se puede notar que todas las variables son numericas, por lo cual no hace falta transformar las variables ni hacer uso de dummies
+
+```{r}
+str(datos)
+```
+
+Dado a que todas las variables son numericas, se procedera a realizar el metodo de seleccion automatico de modelos con los metodos de forward y backward
+
+## Stepwise regression
+
+Modelo con todas las variables
+
+```{r}
+max.model <- lm(Valor.Venta ~ ., datos)
+summary(max.model)
+```
+
+### Stepwise forward
+
+Grafico de las variables usando el criterio de BIC
+
+```{r}
+max.model.formula <- formula(max.model)
+fwd.model <- regsubsets(x=max.model.formula, y=Valor.Venta, data=datos, nvmax=100000, method="forward")
+plot(fwd.model, scale="bic", main="Criterio BIC")
+```
+
+Modelo con las mejores variables segun el metodo de forward siguiendo el criterio de bic
+
+```{r}
+best.fwd.model <- summary(fwd.model)
+best.fwd.model.by.bic <- which.min(best.fwd.model$bic)
+vars.fwd.model <- names(coef(fwd.model, best.fwd.model.by.bic))
+formula.best.fwd <- as.formula(paste("Valor.Venta ~ 1 + ", paste(vars.fwd.model[2:length(vars.fwd.model)], collapse=" + "), sep=""))
+best.model.fwd <- lm(formula.best.fwd, datos)
+summary(best.model.fwd)
+```
+
+### Stepwise backward 
+
+Grafico de las variables usando el criterio de BIC
+
+```{r}
+bwd.model <- regsubsets(x=max.model.formula, y=Valor.Venta, datos, nvmax=100000, method="backward")
+plot(bwd.model, scale="bic", main="Empleando BIC")
+```
+
+Modelo con las mejores variables segun el metodo de backward siguiendo el criterio de bic
+
+```{r}
+best.bwd.model <- summary(bwd.model)
+best.bwd.model.by.bic <- which.min(best.bwd.model$bic)
+vars.bwd.model <- names(coef(bwd.model, best.bwd.model.by.bic))
+formula.best.bwd <- as.formula(paste("Valor.Venta ~ 1 + ", paste(vars.bwd.model[2:length(vars.bwd.model)], collapse=" + "), sep=""))
+best.model.bwd <- lm(formula.best.bwd, datos)
+summary(best.model.bwd)
+```
+
+Variables que seguen el metodo de backward son las mejores
+
+```{r}
+vars.bwd.model
+```
+
+Variables que seguen el metodo de forward son las mejores
+
+```{r}
+vars.fwd.model
+```
+
+Los metodos de forward y backward concuerdan en que las variables del mejor modelo son las mismas, por lo cual no es necesario realizar la comparacion de los modelos, de este modelo tambien se puede concluir que la variable mas importante para el valor de venta de los inmuebles es el numero de habitaciones, el cual, por cada punto adicional aumenta el valor de venta del inmueble en 147.2687 millones de pesos.
+
+```{r}
+model <- best.model.bwd
+```
+
+## Problemas econometricos
+
+Dado a que los datos son de corte transversal, se procedera a realizar la prueba para los problemas econometricos, los cuales son las pruebas de heteroscedasticidad y multicolinealidad.
+
+### Heteroscedasticidad
+
+```{r}
+ols_plot_resid_qq(model)
+```
+
+```{r}
+res <- residuals(model)
+ks.test(resid(model), "pnorm")
+```
+
+```{r}
+ols_test_normality(res)
+```
+
+Los datos no siguen una distribucion normal, por lo que no son confiables, por lo cual se va a realizar la prueba de Breusch-Pagan estudentizada.
+
+Prueba de Breusch-Pagan
+
+```{r}
+bptest(model, studentize=TRUE)
+```
+
+De la prueba se puede concluir que no hay problemas de heteroscedasticidad, ya que no se puede rechazar la hipotesis nula de homoscedasticidad.
+
+Prueba de White
+
+```{r}
+attach(datos)
+white_lm(model, interactions=T)
+```
+
+De la prueba de white se puede concluir que no se puede rechazar la hipotesis nula de homoscedastidad, por lo cual se puede concluir que el modelo no tiene problemas de heteroscedasticidad.
+
+### Multicolinealidad
+
+Prueba de VIF
+
+```{r}
+vif(model)
+```
+
+Ninguno de las variables del mnodelo posee un VIF alto, por lo cual no se debe corregir nada.
+
+## Predicciones
+
+```{r}
+train.control <- trainControl(method="cv", number=5)
+modelcv <- train(formula.best.bwd, datos, method="lm", trControl=train.control)
+summary(modelcv)
+```
+
+```{r}
+nuevo.dato <- data.frame(precio.Metro2.casa=7.5 ,precio.Metro2.apart=5.5, n.banos=3, n.hab=2, n.parqueaderos=2, tipo.inmueble=0, m.cuadra=200, km.parque=15, km.centrocom=5)
+predict(modelcv, nuevo.dato, interval="prediction", level=0.95)
+```
+
+Para los datos del nuevo inmueble que se ingresaron el nuevo valor del precio es de 3090.007 millones de pesos.

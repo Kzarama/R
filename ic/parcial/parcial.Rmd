@@ -1,0 +1,58 @@
+---
+title: "Untitled"
+author: "Kevin Zarama"
+date: "19/3/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+data <- read.table("data.csv", sep = " ", header = TRUE)
+head(data)
+```
+
+
+
+
+
+
+
+
+```{r}
+modelo1 <- lm(y ~ x1+x2+x3+x4+x5, data)
+summary(modelo1)
+```
+
+```{r}
+modelo2 <- lm(y ~ x1 + x3 + x5, data)
+summary(modelo2)
+```
+
+
+
+```{r}
+anova(modelo2, modelo1)
+```
+
+
+```{r}
+modelo3 <- lm(y ~ x3 + x5 + x10 + x15, data)
+summary(modelo3)
+```
+
+```{r}
+library("AER")
+jtest(modelo1, modelo3)
+```
+
+
+
+```{r}
+D <- data$x2 > 5
+modelo4 <- lm(y ~ x1 + D + x1 * D, data)
+summary(modelo4)
+```
+
+
