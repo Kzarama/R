@@ -1,0 +1,110 @@
+---
+title: "Taller en clase 1"
+author: "Kevin Zarama"
+date: "20/8/2021"
+output: html_document
+---
+
+```{r, include=FALSE}
+library(knitr)
+library(rmarkdown)
+
+setwd(".")
+```
+
+## Cargar el dataset de estudiantes de la prueba saber tyt del año 2016-2.
+
+```{r echo=FALSE}
+sabertyt_data = read.csv2("SABERTYT20162.csv", na.strings = c("NA", ""))
+paged_table(head(sabertyt_data))
+```
+
+## Filtrar estado de los estudiantes.
+Mostrar los datos de los estados de los estudiantes.
+```{r echo=FALSE}
+table(sabertyt_data$ESTU_ESTADO)
+```
+
+Filtrar el estado de los estudiantes por publicar.
+```{r echo=FALSE}
+sabertyt_data = sabertyt_data[sabertyt_data$ESTU_ESTADO == "PUBLICAR",]
+table(sabertyt_data$ESTU_ESTADO)
+```
+
+## Filtrar por nacionalidad Colombiana.
+Nacionalidades iniciales de los estudiantes.
+```{r echo=FALSE}
+table(sabertyt_data$ESTU_NACIONALIDAD)
+```
+
+Filtrar estudiantes por nacionalidad colombiana.
+```{r echo=FALSE}
+sabertyt_data = sabertyt_data[sabertyt_data$ESTU_NACIONALIDAD == "1 COLOMBIA",]
+table(sabertyt_data$ESTU_NACIONALIDAD)
+```
+
+## Filtrar columnas.
+Filtrar las columnas de 1-15 y 85-104.
+```{r echo=FALSE}
+sabertyt_data = sabertyt_data[, c(1:15, 85:104)]
+paged_table(head(sabertyt_data))
+```
+
+## Filtar por edad.
+Para realizar la columna de edades, se debio solucionar la anomalia del tipo de variable, el cual fue que las fechas estaban en tipo que no correspondia a tipo de dato Date, Tambien se presentaron valores invalidos en las fechas de nacimiento de los estudiantes, debido a que, algunos estudiantes indicaron una fecha de nacimiento que indicaba una fecha mayor a la del examen o una fecha muy cercana a la del examen, por lo cual se elimino los datos invalidos.
+```{r echo=FALSE}
+sabertyt_data$ESTU_FECHANACIMIENTO=as.Date(sabertyt_data$ESTU_FECHANACIMIENTO, format = "%d/%m/%Y")
+sabertyt_data$ESTU_FECHANACIMIENTO[sabertyt_data$ESTU_FECHANACIMIENTO > as.Date("2002-01-01")] = NA
+summary(sabertyt_data$ESTU_FECHANACIMIENTO)
+```
+
+Calcular las edades de cada uno de los estudiantes e ingresarlas en una nueva columna en el dataset.
+```{r echo=FALSE}
+sabertyt_data$Edad = (as.Date("2016-10-09") - sabertyt_data$ESTU_FECHANACIMIENTO)/365.25
+sabertyt_data$Edad = as.integer(sabertyt_data$Edad)
+summary(sabertyt_data$Edad)
+```
+
+## Nivel de ingles.
+Nivel de ingles inicial del dataset.
+```{r}
+table(sabertyt_data$MOD_INGLES_DESEM)
+```
+
+Filtrar estudiantes con nivel de ingles B1 y B2 (puntaje mayor o igual a 124).
+```{r echo=FALSE}
+sabertyt_data = sabertyt_data[sabertyt_data$MOD_INGLES_PUNT >= 124,]
+table(sabertyt_data$MOD_INGLES_DESEM)
+```
+
+## Tiene etnia.
+Estudiantes con etnia inicial del dataset.
+```{r echo=FALSE}
+table(sabertyt_data$ESTU_TIENE_ETNIA)
+```
+
+Estudiantes 
+```{r echo=FALSE}
+sabertyt_data = sabertyt_data[sabertyt_data$ESTU_TIENE_ETNIA == "SI",]
+table(sabertyt_data$ESTU_TIENE_ETNIA)
+```
+
+Etnias de los estudiantes, la etnia se presentan valores inconsistentes, ya que los estudiantes indican que si tienen etnia pero en el tipo de etnia indican que su etnia es ninguno.
+```{r echo=FALSE}
+table(sabertyt_data$ESTU_ETNIA)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

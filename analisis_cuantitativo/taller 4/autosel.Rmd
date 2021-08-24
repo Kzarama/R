@@ -1,0 +1,126 @@
+---
+title: "Taller 4 Seleccion automatica de modelos"
+author: "Kevin Zarama - Cristhian Castillo"
+date: "25/3/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r include=FALSE}
+library(AER);
+library(leaps)
+```
+Leer datos del dataset
+```{r}
+data <- na.omit(read.csv("DatosTaller4.csv", row.names=1))
+```
+Primeras columnas del dataset
+```{r}
+head(data)
+```
+Dimensiones del dataset
+```{r}
+dim(data)
+```
+Modelo con todas las variables explicativas
+```{r}
+max.model <- lm(ViolentCrimesPerPop ~ ., data)
+summary(max.model)
+```
+## Stepwise forward
+```{r}
+max.model.formula <- formula(max.model)
+fwd.model <- regsubsets(x=max.model.formula, y=ViolentCrimesPerPop, data=data, nvmax=100000, method="forward")
+```
+Graficar el resultado del stepwise para elegir el mejor modelo.
+```{r}
+plot(fwd.model, scale="bic", main="Criterio del BIC")
+```
+El mejor modelo es:
+```{r}
+best.fwd.model <- summary(fwd.model)
+best.fwd.model.bic <- which.min(best.fwd.model$bic)
+vars.fwd.model <- names(coef(fwd.model, best.fwd.model.bic))
+formula.best.fwd <- as.formula(paste("ViolentCrimesPerPop ~ 1 +", paste(vars.fwd.model[2:length(vars.fwd.model)], collapse=" + "), sep=""))
+best.model.fwd <- lm(formula.best.fwd, data)
+summary(best.model.fwd)
+```
+## Stepwise backward
+```{r}
+bwd.model <- regsubsets(x=formula(max.model), y=ViolentCrimesPerPop, data=data, nvmax=100000, method="backward")
+```
+Graficar el resultado del backward para elegir el mejor modelo
+```{r}
+plot(bwd.model, scale="bic", main="Criterio del BIC")
+```
+El mejor modelo es:
+```{r}
+best.bwd.model <- summary(bwd.model)
+best.bwd.model.bic <- which.min(best.bwd.model$bic)
+vars.bwd.model <- names(coef(bwd.model, best.bwd.model.bic))
+vars.bwd.model[-1]
+formula.best.bwd <- as.formula(paste("ViolentCrimesPerPop ~ 1 +", paste(vars.bwd.model[2:length(vars.bwd.model)], collapse=" + "), sep=""))
+best.model.bwd <- lm(formula.best.bwd, data)
+summary(best.model.bwd)
+```
+## Prueba mejor modelo
+
+El modelo 1, que se selecciono con el stepwise forward, tiene 15 variables explicativas y el modelo 2, que se selecciono con el stepwise backward, tiene 14 variables explicativas. A continuacion se va a probar cual de los dos es el mejor modelo.
+
+```{r}
+jtest(best.model.fwd, best.model.bwd)
+```
+```{r}
+coxtest(best.model.fwd, best.model.bwd)
+```
+Con la prueba j con un 95% de confianza y la prueba cox con un 95% de confianza no es posible determinar cual es el mejor modelo entre los dos. Se observa que el modelo 1 tiene algunas variables no significativas, por lo cual se eliminaran a continuacion.
+```{r}
+remove_not_significant <- function(modelo, p){
+  all_vars <- all.vars(formula(modelo))[-1]
+  dep_var <- all.vars(formula(modelo))[1]
+  summ <- summary(modelo)
+  pvals <- summ[[4]][,4]
+  not_signif <- character()
+  not_signif <- names(which(pvals > p))
+  
+  while(length(not_signif) > 0){
+    all_vars <- all_vars[!all_vars %in% not_signif[1]]
+    myForm <- as.formula(paste(paste(dep_var, " ~"), paste(all_vars, collapse=" + "), sep=""))
+    modelo <- lm(myForm, data)
+    summ <- summary(modelo)
+    pvals <- summ[[4]][, 4]
+    not_signif <- character()
+    not_signif <- names(which(pvals > p))
+    not_signif <- not_signif[!not_signif %in% "(Intercept)"]
+  }
+  modelo.limpio <- modelo
+  return(modelo.limpio)
+}
+best.model.fwd.clean <- remove_not_significant(best.model.fwd, 0.01)
+summary(best.model.fwd.clean)
+```
+```{r}
+jtest(best.model.fwd.clean, best.model.bwd)
+```
+```{r}
+coxtest(best.model.fwd.clean, best.model.bwd)
+```
+De igual forma no se puede concluir con estos dos modelos en ninguna de las dos pruebas, por lo cual se hara uso de el r^2, AIC y BIC adj en la comparacion de los modelos para poder concluir la prueba.
+```{r}
+summary(best.model.fwd.clean)$adj.r.square
+```
+```{r}
+summary(best.model.bwd)$adj.r.squared
+```
+```{r}
+AIC(best.model.fwd.clean, best.model.bwd)
+```
+```{r}
+BIC(best.model.fwd.clean, best.model.bwd)
+```
+Con lo cual se puede concluir que el mejor de los modelo es el: modelo best.model.bwd, debido a que el r^2, y el AIC muestran que este es el mejor modelo, el cual tiene las siguientes variables explicativas:
+```{r}
+names(coef(best.model.bwd))[-1]
+```

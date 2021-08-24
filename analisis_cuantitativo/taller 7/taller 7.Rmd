@@ -1,0 +1,195 @@
+---
+title: "taller 7"
+author: "Kevin Zarama"
+date: "8/4/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+load("data.rdata")
+res1 <- lm(price.adjusted ~ ., base)
+summary(res1)
+```
+
+```{r}
+e <- residuals(res1)
+class(e)
+```
+
+```{r}
+library(xts)
+par(mfrow=c(2,1))
+ts.plot(e, main="Errores estimados", xlab="tiempo", ylab="errores")
+plot(e, lag.xts(e), xlab="errores(t)", ylab="errores (t-1)", xlim=c(-6, 6), ylim=c(-6, 6))
+reg <- lm(e ~ lag.xts(e))
+abline(reg, col="blue")
+```
+
+Se puede observar de la primera grafica que los errores no estan fluctuando "mucho", por lo cual se puede decir que no se puede evidenciar una autocorrelacion negativa, por otro lado la segunda grafica nos dice que puede existir una autocorrelacion positiva, para tener una mejor conclusion se realizaran mas pruebas para comprobar la autocorrelacion.
+
+# Pruebas
+## Prueba de rachas
+
+```{r include=FALSE}
+#install.packages("tseries")
+library(tseries)
+```
+
+```{r}
+signo.error <- factor(e > 0)
+head(signo.error)
+```
+
+```{r}
+runs.test(signo.error)
+```
+
+```{r}
+runs.test(signo.error, alternative = "less")
+```
+
+```{r}
+runs.test(signo.error, alternative = "greater")
+```
+
+Los resultados de la primera prueba con two.sided(sin parametro), nos permite rechazar con un 99% de confianza la no autocorrelacion, por lo cual se puede concluir que existe algun tipo de autocorrelacion. Por otra parte se puede concluir, gracias a la prueba de hipotesis alternativa less que, existe autocorrelacion positiva con un 99% de confianza.
+
+## Prueba de Durbin-Watson
+
+```{r include=FALSE}
+library(AER)
+```
+
+```{r}
+dwtest(res1, alternative = "two.sided")
+```
+
+```{r}
+dwtest(res1, alternative = "greater")
+```
+
+```{r}
+dwtest(res1, alternative = "less")
+```
+
+De la anterior prueba se puede concluir que los resultados son similares a los obtenidos de la prueba de rachas, por lo cual se rechaza la hipotesis nula de no autocorrelacio y se concluye que existe autocorrelacion positiva.
+
+## Prueba de Box-Pierce
+
+```{r}
+Box.test(e, lag=1)
+```
+
+De esto se puede rechazar la hipotesis nula de no autocorrelacion.
+
+```{r}
+tabla.Box.Pierce <- function(residuo, max.lag = 20, type = "Box-Pierce") {
+# se crean objetos para guardar los resultados
+BP.estadistico <- matrix(0, max.lag, 1)
+BP.pval <- matrix(0, max.lag, 1)
+# se calcula la prueba para los diferentes rezagos
+for (i in 1:max.lag) {
+BP <- Box.test(residuo, lag = i, type = type)
+BP.estadistico[i] <- BP$statistic
+BP.pval[i] <- round(BP$p.value, 5)
+}
+labels <- c("Rezagos", type, "p-valor")
+Cuerpo.Tabla <- cbind(matrix(1:max.lag, max.lag, 1), BP.estadistico,
+BP.pval)
+TABLABP <- data.frame(Cuerpo.Tabla)
+names(TABLABP) <- labels
+return(TABLABP)
+}
+tabla.Box.Pierce(e)
+```
+
+Se puede concluir que existe autocorrelacion, debido a que las autocorrelaciones de los errores no son cero.
+
+## Prueba de Breusch-Godfrey
+
+```{r include=FALSE}
+#install.packages("lmtest")
+library(lmtest)
+```
+
+```{r}
+bgtest(res1, order=1)
+```
+
+```{r}
+tabla.Breusch.Godfrey <- function(modelo, max.order = 5) {
+# se crean objetos para guardar los resultados
+BG.estadistico <- matrix(0, max.order, 1)
+BG.pval <- matrix(0, max.order, 1)
+# se calcula la prueba para los diferentes rezagos
+for (i in 1:max.order) {
+BG <- bgtest(modelo, order = i)
+BG.estadistico[i] <- -BG$statistic
+BG.pval[i] <- round(BG$p.value, 5)
+}
+labels <- c("Orden AR(s)", "Breusch-Godfrey", "p-valor")
+Cuerpo.Tabla <- cbind(matrix(1:max.order, max.order, 1),
+BG.estadistico, BG.pval)
+TABLABP <- data.frame(Cuerpo.Tabla)
+names(TABLABP) <- labels
+return(TABLABP)
+}
+tabla.Breusch.Godfrey(res1)
+```
+
+# Solucion a la heteroscedasticidad
+
+```{r}
+#install.packages("sandwich")
+library(sandwich)
+library(lmtest)
+coeftest(res1, vcov=NeweyWest(res1))
+```
+
+```{r}
+coeftest(res1, vcoc=kernHAC(res1))
+```
+
+```{r}
+coeftest(res1, vcoc=weave(res1))
+```
+
+Las tres correcciones coinciden en concluir que las variables son significativas con un 99% de confianza, a excepcion de price.open, price.high, price.low y volume
+
+```{r}
+res2 = lm(price.adjusted ~ price.close + ref.date + ticker + ret.adjusted.prices + ret.closing.prices, base)
+summary(res2)
+```
+
+```{r}
+waldtest(res2, res1, vcov=NeweyWest(res2))
+```
+
+```{r}
+waldtest(res2, res1, vcov=kernHAC(res2))
+```
+
+```{r}
+waldtest(res2, res1, vcov=NeweyWest(res2))
+```
+
+Se puede concluir que el mejor modelo es el modelo 1
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,94 @@
+---
+title: "R Notebook"
+author: Kevin Zarama - Cristhian Castillo
+output: html_document
+---
+
+
+Cargar los datos de el dataset de los registros de muertes por cancer
+
+```{r}
+data_cancer <- read.csv("cancer_reg.csv")
+```
+
+Eliminar las variables no numericas y los valores na
+```{r}
+cancer_ds <- data_cancer[, -c(9, 13)]
+cancer_ds <- na.exclude(cancer_ds)
+```
+
+Realizar los modelos propuestos por los 3 grupos
+```{r}
+r1 <- lm(TARGET_deathRate ~ ., cancer_ds, na.action = na.exclude)
+r2 <- lm(TARGET_deathRate ~ avgAnnCount + avgDeathsPerYear + incidenceRate + medIncome + popEst2015 + povertyPercent + studyPerCap + MedianAge + MedianAgeMale + MedianAgeFemale + AvgHouseholdSize + PercentMarried + PctNoHS18_24, cancer_ds, na.action = na.exclude)
+r3 <- lm(TARGET_deathRate ~ PctHS18_24 + PctSomeCol18_24 + PctBachDeg18_24 + PctHS25_Over + PctBachDeg25_Over + PctEmployed16_Over + PctUnemployed16_Over + PctPrivateCoverage + PctPrivateCoverageAlone + PctEmpPrivCoverage + PctPublicCoverage + PctPublicCoverageAlone + PctWhite + PctBlack + PctAsian + PctOtherRace + PctMarriedHouseholds + BirthRate, cancer_ds, na.action = na.exclude)
+```
+## Resumen de los modelos propuestos
+```{r}
+summary(r1)
+```
+
+```{r}
+summary(r2)
+```
+
+```{r}
+summary(r3)
+```
+
+### R^2 de los modelos
+```{r}
+summary(r1)$adj.r.squared
+```
+```{r}
+summary(r2)$adj.r.squared
+```
+```{r}
+summary(r3)$adj.r.squared
+```
+Segun el r^2 el mejor modelo es el 1, debido a que tiene el valor mas alto
+
+### AIC
+```{r}
+c(AIC(r1, r2, r3))
+```
+
+### BIC
+```{r}
+c(BIC(r1, r2, r3))
+```
+Y segun el AIC y el BIC el mejor modelo es el modelo 1
+Las 3 pruebas concuerdan en que el mejor modelo es el modelo 1
+
+## Pruebas para modelos anidados
+### Anova
+Anova para el modelo 3, que se encuentra anidado en el modelo 1
+```{r}
+anova(r3, r1)
+```
+
+Anova para el modelo 2 que se encuentra anidado en el modelo 1
+```{r}
+anova(r2, r1)
+```
+
+## Modelos no anidados
+Instalar paquetes para las pruebas de modelos no anidados
+```{r}
+library(AER)
+```
+### J test
+```{r}
+jtest(r2, r3)
+```
+Con el primer t calculado obtenemos que se rechaza la hipotesis nula y con eso no podemos concluir que el mejor modelo es el 3 y con el segundo valor de t calculado tambien se rechaza la hipotesis nula, lo que indica que tampoco puede concluir que el mejor modelo es el 1.
+
+### Cox test
+```{r}
+coxtest(r2, r3)
+```
+Con el primer t calculado obtenemos que se rechaza la hipotesis nula y con eso no podemos concluir que el mejor modelo es el 2 y con el segundo valor de t calculado tambien se rechaza la hipotesis nula, lo que indica que tampoco puede concluir que el mejor modelo es el 1.
+
+## Conclusion
+
+De los modelos propuestos se puede concluir que el mejor modelo es el modelo 1 y que este es el que representa a todos los datos, debido a que las pruebas que se realizaron para determinar cual es el mejor modelo, tales como: el r^2 adj, las pruebas con anova, AIC y BIC muestran que el mejor modelo es el 1, como se indica en cada apartado de las pruebas de los modelos.

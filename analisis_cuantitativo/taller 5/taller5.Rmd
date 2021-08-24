@@ -1,0 +1,109 @@
+---
+title: "Taller 5 multicolinealidad"
+author: "Kevin Zarama - Cristhian Castillo"
+date: "25/3/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r include=FALSE}
+library(car)
+```
+Cargar los datos desde el dataset
+```{r}
+data <- read.csv("DatosTaller4.csv", row.name=1)
+```
+Realizar el modelo con las variables
+```{r}
+modelo1 <- lm(ViolentCrimesPerPop ~ racepctblack + pctUrban + PctPopUnderPov + MalePctDivorce + PctKids2Par + PctWorkMom + PctIlleg + PctPersDenseHous + HousVacant + PctHousOccup + RentLowQ + MedRent + MedOwnCostPctIncNoMtg +   NumStreet, data)
+summary(modelo1)
+```
+De los sintomas de multicolinealidad, este modelo parece no presentar ninguno, por lo cual se va a proceder a realizar las pruebas de multicolinealidad.
+## Prueba vif
+```{r}
+vif(modelo1)
+```
+En esta prueba se presenta multicolinealidad mayor 4 en cinco de las variables.
+# Prueba de Belsley, Kuh y Welsh
+```{r}
+XTX <- model.matrix(modelo1)
+e <- eigen(t(XTX) %*% XTX)
+e$val
+```
+```{r}
+lambda.1 <- max(e$val)
+lambda.k <- min(e$val)
+kappa <- sqrt(lambda.1/lambda.k)
+kappa
+```
+Se puede observar la existencia de un kappa alto, lo que indica un problema de multicolinealidad.
+```{r}
+remueve.VIF.grande <- function(modelo, u){
+  data <- modelo$model
+  all_vifs <- car:: vif(modelo)
+  names_all <- names(all_vifs)
+  dep_var <- all.vars(formula(modelo))[1]
+  while(any(all_vifs > u)){
+    var_max_vif <- names(which(all_vifs == max(all_vifs)))
+    names_all <- names_all[!(names_all) %in% var_max_vif]
+    myForm <- as.formula(paste(paste(dep_var, " ~ "), paste(names_all, collapse=" + "), sep=""))
+    modelo.prueba <- lm(myForm, data)
+    all_vifs <- car::vif(modelo.prueba)
+  }
+  modelo.limpio <- modelo.prueba
+  return(modelo.limpio)
+}
+
+modelo2 <- remueve.VIF.grande(modelo1, 4)
+summary(modelo2)
+```
+Realizar las pruebas de nuevo para observar la muliticolinealidad
+```{r}
+XTX <- model.matrix(modelo2)
+e <- eigen(t(XTX) %*% XTX)
+e$val
+```
+```{r}
+lambda.1 <- max(e$val)
+lambda.k <- min(e$val)
+kappa <- sqrt(lambda.1/lambda.k)
+kappa
+```
+```{r}
+vif(modelo2)
+```
+Aqui se puede observar que en el modelo los vif estan por debajo de 4, y que el estadistico para la prueba de Balsley, Kuh y Welsh es menor.
+Pero se puede observar que ahora existen variables no significativas en el modelo, por lo cual, el modelo puede ser mejorado.
+```{r}
+remove_not_significant <- function(modelo, p){
+  data <- modelo$model
+  all_vars <- all.vars(formula(modelo))[-1]
+  dep_var <- all.vars(formula(modelo))[1]
+  summ <- summary(modelo)
+  pvals <- summ[[4]][, 4]
+  not_signif <- character()
+  not_signif <- names(which(pvals > p))
+  while(length(not_signif) > 0){
+    all_vars <- all_vars[!all_vars %in% not_signif[1]]
+    myForm <- as.formula(paste(paste(dep_var, " ~ "), paste(all_vars, collapse=" + "), sep=""))
+    modelo <- lm(myForm, data)
+    summ <- summary(modelo)
+    pvals <- summ[[4]][, 4]
+    not_signif <- character()
+    not_signif <- names(which(pvals > p))
+    not_signif <- not_signif[!not_signif %in% "(Intercept)"]
+  }
+  modelo.limpio <- modelo
+  return(modelo.limpio)
+}
+
+modelo3 <- remove_not_significant(modelo2, 0.1)
+summary(modelo3)
+```
+Entonces el modelo final queda como el modelo3, el cual tiene las siguientes variables:
+```{r}
+names(coef(modelo3))[-1]
+```
+S
