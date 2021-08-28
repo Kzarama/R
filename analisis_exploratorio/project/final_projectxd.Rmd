@@ -1,0 +1,247 @@
+---
+title: "Proyecto final"
+author: "Kevin Zarama - Cristhian Castillo"
+date: "27/8/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library("readxl")
+library(knitr)
+library(rmarkdown)
+
+setwd(".")
+```
+
+# Proyecto final de analisis exploratorio
+
+### Integrantes
+Kevin Zarama  
+Cristhian Castillo
+
+---
+
+## Objetivo: 
+
+## Carga de datos temporada 18-19
+Tabla con los datos de la temporada 18-19 de la liga Belga.
+```{r echo=FALSE}
+my_data_1 <- read_excel("BELGA.xlsx", sheet="18-19")
+
+cols <- c(1:22)
+my_data_1 <- my_data_1[, cols]
+
+index <- c(1:240)
+my_data_1$ind <- index
+
+paged_table(head(my_data_1))
+```
+
+## Deteccion de anomalias en los datos
+
+Tipos de datos: se puede observar que los tipos de datos estan de manera correcta.
+
+```{r echo=FALSE}
+str(my_data_1)
+```
+
+Observaciones duplicadas: no hay datos duplicados en la base de datos.
+
+```{r echo=FALSE}
+sum(duplicated(my_data_1))
+```
+
+Campos vacios: 
+
+```{r echo=FALSE}
+summary(my_data_1)
+```
+
+Los siguientes datos son los que tienen campos vacios en casi todos los campos, por lo cual se procedera a eliminar estos registros.
+```{r echo=FALSE}
+empty_1 <- my_data_1[is.na(my_data_1$HS),]
+paged_table(empty_1)
+```
+
+```{r echo=FALSE}
+my_data_1 <- my_data_1[my_data_1$ind != empty_1$ind, ]
+summary(my_data_1)
+```
+
+
+Datos atipicos
+
+```{r}
+par(mfrow = c(1, 17))
+invisible(lapply(c(5, 6, 8, 9, 11:23), function(i) boxplot(my_data_1[, i])))
+```
+
+
+Errores de digitacion: se puede observar que no existen errores de digitacion en el conjunto de datos.
+
+```{r echo=FALSE}
+table(my_data_1$HomeTeam)
+```
+
+```{r echo=FALSE}
+table(my_data_1$AwayTeam)
+```
+
+## Carga de datos temporada 19-20
+Tabla con los datos de la temporada 18-19 de la liga Belga.
+```{r echo=FALSE}
+my_data_2 <- read_excel("BELGA.xlsx", sheet="19-20")
+
+cols <- c(1:23)
+my_data_2 <- my_data_2[, cols]
+
+index <- c(1:235)
+my_data_2$ind <- index
+
+paged_table(head(my_data_2))
+```
+
+## Deteccion de anomalias en los datos
+
+Tipos de datos: se puede observar que los tipos de datos estan de manera correcta.
+
+```{r echo=FALSE}
+str(my_data_2)
+```
+
+Observaciones duplicadas: no hay datos duplicados en la base de datos.
+
+```{r echo=FALSE}
+sum(duplicated(my_data_2))
+```
+
+Campos vacios: 
+
+```{r echo=FALSE}
+summary(my_data_2)
+```
+
+Los siguientes datos son los que tienen campos vacios en casi todos los campos, por lo cual se procedera a eliminar estos registros.
+```{r echo=FALSE}
+empty_2 <- my_data_2[is.na(my_data_2$HS),]
+paged_table(empty_2)
+```
+
+```{r echo=FALSE}
+my_data_2 <- my_data_2[my_data_2$ind != empty_2$ind, ]
+summary(my_data_2)
+```
+
+
+Datos atipicos
+
+```{r}
+lapply(c(6, 7, 9, 10, 12:24), function(i) boxplot(my_data_2[, i]))
+```
+
+
+Errores de digitacion: se puede observar que no existen errores de digitacion en el conjunto de datos.
+
+```{r echo=FALSE}
+table(my_data_2$HomeTeam)
+```
+
+```{r echo=FALSE}
+table(my_data_2$AwayTeam)
+```
+
+
+## Carga de datos temporada 20-21
+Tabla con los datos de la temporada 18-19 de la liga Belga.
+```{r echo=FALSE}
+my_data_3 <- read_excel("BELGA.xlsx", sheet="20-21")
+
+cols <- c(1:23)
+my_data_3 <- my_data_3[, cols]
+
+index <- c(1:311)
+my_data_3$ind <- index
+
+paged_table(head(my_data_3))
+```
+
+### Deteccion de anomalias en los datos
+
+Tipos de datos: se puede observar que los tipos de datos estan de manera correcta.
+
+```{r echo=FALSE}
+str(my_data_3)
+```
+
+Observaciones duplicadas: no hay datos duplicados en la base de datos.
+
+```{r echo=FALSE}
+sum(duplicated(my_data_3))
+```
+
+Campos vacios: 
+
+En estos registros solo se tiene un registro con campos vacios, por lo cual se va a dejar.
+
+```{r echo=FALSE}
+summary(my_data_3)
+```
+
+Datos atipicos
+
+```{r}
+lapply(c(6, 7, 9, 10, 12:24), function(i) boxplot(my_data_2[, i]))
+```
+
+Errores de digitacion: se puede observar que no existen errores de digitacion en el conjunto de datos.
+
+```{r echo=FALSE}
+table(my_data_3$HomeTeam)
+```
+
+```{r echo=FALSE}
+table(my_data_3$AwayTeam)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
