@@ -67,7 +67,7 @@ summary(sabertyt_data$Edad)
 
 ## Nivel de ingles.
 Nivel de ingles inicial del dataset.
-```{r}
+```{r echo=FALSE}
 table(sabertyt_data$MOD_INGLES_DESEM)
 ```
 

@@ -238,7 +238,6 @@ Filtrar las columnas de 1-15 y 85-104.
 <div id="nivel-de-ingles." class="section level2">
 <h2>Nivel de ingles.</h2>
 <p>Nivel de ingles inicial del dataset.</p>
-<pre class="r"><code>table(sabertyt_data$MOD_INGLES_DESEM)</code></pre>
 <pre><code>## 
 ##    A1   A1-    A2    B1    B2 
 ## 18799 12965 13540  5995  1366</code></pre>
@@ -250,18 +249,14 @@ Filtrar las columnas de 1-15 y 85-104.
 <div id="tiene-etnia." class="section level2">
 <h2>Tiene etnia.</h2>
 <p>Estudiantes con etnia inicial del dataset.</p>
-<pre class="r"><code>table(sabertyt_data$ESTU_TIENE_ETNIA)</code></pre>
 <pre><code>## 
 ##   NO   SI 
 ## 6737  277</code></pre>
 <p>Estudiantes</p>
-<pre class="r"><code>sabertyt_data = sabertyt_data[sabertyt_data$ESTU_TIENE_ETNIA == &quot;SI&quot;,]
-table(sabertyt_data$ESTU_TIENE_ETNIA)</code></pre>
 <pre><code>## 
 ##  SI 
 ## 277</code></pre>
 <p>Etnias de los estudiantes, la etnia se presentan valores inconsistentes, ya que los estudiantes indican que si tienen etnia pero en el tipo de etnia indican que su etnia es ninguno.</p>
-<pre class="r"><code>table(sabertyt_data$ESTU_ETNIA)</code></pre>
 <pre><code>## 
 ##     1 Comunidad afrodescendiente                      100 Ninguno 
 ##                               58                              152 
