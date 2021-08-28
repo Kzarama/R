@@ -1,0 +1,154 @@
+---
+title: "Taller_individual_1"
+author: "Kevin Zarama"
+date: "24/8/2021"
+output: html_document
+---
+
+```{r echo=FALSE}
+setwd(".")
+#install.packages("readxl")
+library("readxl")
+library(knitr)
+library(rmarkdown)
+```
+
+## 1. Objetivo
+
+El proposito del proyecto es realizar una deteccion temprana de la desercion de los estudiantes de la universidad para realizar programas de apoyo y de acompañamiento a los estudiantes que presenten un mayor riesgo.
+
+Tabla con el set de datos.
+```{r echo=FALSE}
+my_data <- read_excel("Deserción.xlsx")
+paged_table(head(my_data))
+```
+
+## 2. Tipo de variable de cada columna
+
+Los tipos de variables de cada columna son:  
+
+- Código: cuantitativa discreta  
+- Facultad: cualitativa nominal  
+- Cohorte: cualitativa discreta  
+- Tipo_prog: cualitativa nominal  
+- Género: cualitativa nominal  
+- Estrato: cuantitativa discreta  
+- Ciudad_proc: cualitativa nominal  
+- Edad_entrada: cualitativa nominal  
+- PG: cuantitativa discreta  
+- PLC: cuantitativa discreta  
+- PMA: cuantitativa discreta  
+- PSC: cuantitativa discreta  
+- PCN: cuantitativa discreta  
+- PIN: cuantitativa discreta  
+- Intercambio_entrante: cualitativa discreta  
+- Deserta: cualitativa nominal  
+- Educ_madre: cualitativa ordinal  
+- Educ_padre:cualitativa ordinal  
+
+## 3. Filtro por programa principal
+
+Estudiantes filtrados por tipo de programa principal.
+```{r echo=FALSE}
+my_data = my_data[my_data$Tipo_prog == "Principal",]
+paged_table(head(my_data))
+```
+
+## 4. Estudiante extrangero
+
+Numero total de extrangeros que deserta.
+```{r echo=FALSE}
+extrangeros_data = my_data[my_data$Intercambio_entrante == "S",]
+table(extrangeros_data$Deserta)
+```
+
+Se puede observar que todos los estudiantes extrangeros se marca en deserta, por lo cual se procedera a eliminar a todos los estudiantes extrangeros.
+
+```{r echo=FALSE}
+my_data = my_data[my_data$Ciudad_proc != "Extranjero",]
+```
+
+
+## 5. Anomalia edad
+
+Si existe anomalia con la edad, debido a que se presenta la edad con rangos, en los casos de 16 o menos y 19 o más, en este caso no se puede hacer ningun cambio debido a que no se tienen las edades reales de los estudiantes, la solucion seria hacer que la universidad investigue las edades reales de los estudiantes para que se haga la correccion de las edades.
+
+```{r echo=FALSE}
+table(my_data$Edad_entrada)
+```
+
+## 6. Anomalia Ciudad
+Ciudades iniciales.
+```{r echo=FALSE}
+table(my_data$Ciudad_proc)
+```
+Se presenta anomalias con respecto a los nombres de las ciudades.
+
+Ciudades despues de la correrrion.
+```{r echo=FALSE}
+my_data$Ciudad_proc[my_data$Ciudad_proc == "Tulua"] = "Tuluá"
+my_data$Ciudad_proc[my_data$Ciudad_proc == "Popayan"] = "Popayán"
+my_data$Ciudad_proc[my_data$Ciudad_proc == "Buga"] = "Guadalajara de Buga"
+table(my_data$Ciudad_proc)
+```
+
+## 7. Problemas con la educacion del padre y la madre
+
+No existen problemas con respecto a al educacion del padre y la madre
+
+Educacion de las madres.
+```{r echo=FALSE}
+table(my_data$Educ_madre)
+```
+
+Educacion de los padres.
+```{r echo=FALSE}
+table(my_data$Educ_padre)
+```
+
+## 8. Problema con puntaje global 
+
+Existen datos invalidos en el puntaje global, ya que el maximo puntaje que se puede sacar en la prueba es 500 y existen registros de estudiantes que tienen mas de este puntaje maximo.
+
+```{r echo=FALSE}
+table(my_data$PG)
+```
+Por lo tanto se procedera a eliminar los registros invalidos.
+```{r echo=FALSE}
+my_data$PG[my_data$PG > 500] = NA
+my_data
+```
+
+```{r echo=FALSE}
+table(my_data$PG)
+```
+
+## 9. Identificar estudiantes que tienen desempleño bajo en matematicas y lectura critica
+Tabla con la nueva columna de bajo desempeño.
+```{r echo=FALSE}
+my_data$bajo_desempenio = FALSE
+my_data$bajo_desempenio[my_data$PMA < 62 & my_data$PLC < 62] = TRUE
+paged_table(head(my_data))
+```
+
+## 10. Identificar estudiantes que no son de Cali
+Tabla con la nueva columna que indica si el estudiante es de fuera de Cali.
+```{r echo=FALSE}
+my_data$Fuera_Cali = FALSE
+my_data$Fuera_Cali[my_data$Ciudad_proc != "Cali"] = TRUE
+paged_table(head(my_data))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
