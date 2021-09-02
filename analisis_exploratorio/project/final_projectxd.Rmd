@@ -74,8 +74,7 @@ summary(my_data_1)
 Datos atipicos
 
 ```{r}
-par(mfrow = c(1, 17))
-invisible(lapply(c(5, 6, 8, 9, 11:23), function(i) boxplot(my_data_1[, i])))
+lapply(c(5, 6, 8, 9, 11:23), function(i) boxplot(my_data_1[, i]))
 ```
 
 
@@ -205,14 +204,142 @@ table(my_data_3$HomeTeam)
 table(my_data_3$AwayTeam)
 ```
 
+## Creacion de variables
+
+### Equipos grandes
+
+Se elijieron a los equipos que mas dinero generan en la temporada
+
+Los equipos mas grandes que se encontraron en la liga, en la temporada 18/19 fueron:  
+- RCS Anderletch
+- club Brujas KV
+- KAA Gante
+- Standart de Lieja
+- KRG Genk
+https://www.transfermarkt.co/jupiler-pro-league/startseite/wettbewerb/BE1/plus/?saison_id=2018  
+
+Los equipos mas grandes que se encontraron en la liga, en la temporada 19/20 fueron:  
+- club Brujas KV
+- RCS Anderletch
+- KRC Gante
+- KAA Gante
+- Standart de Lieja
+https://www.transfermarkt.co/jupiler-pro-league/startseite/wettbewerb/BE1/plus/?saison_id=2019  
+
+Los equipos mas grandes que se encontraron en la liga, en la temporada 20/21 fueron:  
+- club Brujas KV
+- RCS Anderletch
+- KRG Genk
+- KAA Gante
+- Standart de Lieja
+https://www.transfermarkt.co/jupiler-pro-league/startseite/wettbewerb/BE1/plus/?saison_id=2020  
+
+### Equipo recien ascendido
+
+Club Brugge
+
+Malinas
+
+Beerschot VA
+Oud-Heverlee Leuven
+
+### Pandemia
+
+```{r}
+my_data_1$pandemia <- FALSE
+my_data_1$pandemia[my_data_1$Date > "2020-03-13"] = TRUE
+my_data_1$pandemia
+```
+
+```{r}
+my_data_2$pandemia <- FALSE
+my_data_2$pandemia[my_data_2$Date > "2020-03-13"] = TRUE
+my_data_2$pandemia
+```
+
+```{r}
+my_data_3$pandemia <- FALSE
+my_data_3$pandemia[my_data_3$Date > "2020-03-13"] = TRUE
+my_data_3$pandemia
+```
+
+```{r}
+#install.packages("plyr")
+
+library("plyr")
+
+full_dataset <- rbind.fill(my_data_1, my_data_2, my_data_3)
+full_dataset
+```
+
+## Deteccion de anomalias en los datos
+
+Tipos de datos: se puede observar que los tipos de datos estan de manera correcta.
+
+```{r echo=FALSE}
+str(full_dataset)
+```
+
+Observaciones duplicadas: no hay datos duplicados en la base de datos.
+
+```{r echo=FALSE}
+sum(duplicated(full_dataset))
+```
+
+Campos vacios: 
+
+```{r echo=FALSE}
+summary(full_dataset)
+```
+
+Los siguientes datos son los que tienen campos vacios en casi todos los campos, por lo cual se procedera a eliminar estos registros.
+```{r echo=FALSE}
+empty_1 <- full_dataset[is.na(full_dataset$HS),]
+paged_table(empty_1)
+```
+
+```{r echo=FALSE}
+full_dataset <- full_dataset[full_dataset$ind != empty_1$ind, ]
+summary(full_dataset)
+```
 
 
+Datos atipicos
+```{r}
+colnames(my_data_1)
+```
 
+```{r}
+table(full_dataset$HS)
+```
 
+```{r}
+summary(full_dataset)
+full_dataset <- rbind.fill(my_data_1, my_data_2, my_data_3)
 
+lapply(c(5, 6, 8, 9, 11:23), function(i) boxplot(full_dataset[, i]))
+par(mfrow = c(1, 18))
+colnames(my_data_1)
+lapply(c( 5,6, 8,9, 11:23), function(i) boxplot(full_dataset[, i]))
 
+```
 
+```{r}
+full_dataset <- full_dataset[full_dataset$FTHG >= 0, ]
+full_dataset <- full_dataset[full_dataset$FTHG < 20, ]
+full_dataset <- full_dataset[full_dataset$FTAG < 20, ]
+```
 
+Errores de digitacion: se puede observar que no existen errores de digitacion en el conjunto de datos.
+
+```{r echo=FALSE}
+table(full_dataset$HomeTeam)
+```
+
+```{r echo=FALSE}
+table(full_dataset$AwayTeam)
+save(full_dataset, file="dataset.RDATA")
+```
 
 
 

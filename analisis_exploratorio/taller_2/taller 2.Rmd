@@ -1,0 +1,18 @@
+---
+title: "Taller 2"
+author: "Kevin Zarama"
+date: "31/8/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd(".")
+```
+
+```{r}
+dataset <- get(load("performance.RDATA"))
+dataset
+```
+
+
