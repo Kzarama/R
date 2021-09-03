@@ -1,0 +1,437 @@
+---
+title: "Taller individual 2"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(rmarkdown)
+library(ggplot2)
+library(scales)
+library(ggthemes)
+
+setwd(".")
+```
+
+Carga de datos
+===
+
+```{r echo=FALSE}
+tabla_freq <- function(x,total=1,na="ifany"){
+  if (total==1) {
+    M=data.frame("Categoría"=table(x, useNA = na), "Rel"=prop.table(table(x,useNA = na)))[,-3]
+  names(M)=c("Categoría","Freq. Abs.","Freq. Rel.")
+  M$Categoría=as.character(M$Categoría)
+  M[nrow(M)+1,]=c("Total",sum(M$`Freq. Abs.`),sum(M$`Freq. Rel.`))
+  M$`Freq. Rel.`=as.numeric(M$`Freq. Rel.`)
+  M$`Freq. Abs.`=as.numeric(M$`Freq. Abs.`)
+  M
+  } else{
+    M=data.frame("Categoría"=table(x, useNA = na), "Rel"=prop.table(table(x,useNA = na)))[,-3]
+    names(M)=c("Categoría","Freq. Abs.","Freq. Rel.")
+    M
+  }
+}
+```
+
+##### Realizado por:
+#### Kevin Zarama
+
+Objetivo:  
+Responder  
+  i) ¿Cuál es el perfil de ingreso de los estudiantes (género, estrato, edad, ciudad de procedencia, puntaje global, facultad a la que ingresa, bajo desempeño)?  
+  ii) ¿La deserción temprana cómo ha evolucionado a través de las cohortes?  
+  iii) ¿Cuáles variables podrían estar relacionadas con la deserción temprana? ¿Existe algún perfil de riesgo que exploratoriamente podríamos ver?  
+
+#### Diccionario Saber 11:
+Columnas:  
+- PG puntaje global  
+- PMA puntaje matemáticas  
+- PLC puntaje lectura crítica  
+- Pcn puntaje ciencias naturales  
+- PSC puntaje sociales y ciudadanas  
+- PIN puntaje inglés  
+
+Facultades:  
+- ECE escuela de ciencias de la educación  
+- FDCS derecho y ciencias sociales  
+- FCN ciencias naturales  
+- FCS ciencias de la salud  
+- FCAE ciencais administrativas y económicas  
+- FING ingenierias 
+
+#### Tabla con los estudiantes de la universidad ICESI, realizada para un estudio de desercion de los estudiantes.
+
+```{r echo=FALSE}
+datab <- get(load("Base_Final.RDATA"))
+paged_table(datab)
+```
+
+Punto 1
+===
+
+#### i) ¿Cuál es el perfil de ingreso de los estudiantes (género, estrato, edad, ciudad de procedencia, puntaje global, facultad a la que ingresa, bajo desempeño)?
+
+---
+
+##### Género
+
+Como se puede obvservar en la siguiente grafica, se puede concluir que entra un 10% mas de mujeres que de hombres a la universidad.
+
+```{r echo=FALSE}
+TABLA=tabla_freq(datab$Género, 0)
+
+ggplot(TABLA, aes(x=Categoría, y=`Freq. Rel.`))+
+  geom_bar(stat = "identity", fill="steelblue", color="black")+
+  labs(x="Género",y="Frecuencia")+
+  scale_y_continuous(limits = c(0,ifelse(max(TABLA$`Freq. Rel.`)>0.5,1,0.5)), breaks = seq(0,ifelse(max(TABLA$`Freq. Rel.`)>0.5,1,0.5),0.1), labels = percent)+
+  geom_text(aes(x=Categoría, y=`Freq. Rel.`, label=percent(`Freq. Rel.`)),vjust=-0.5, fontface = "bold", size=5)+
+  theme_base()
+```
+
+---
+
+##### Estrato
+
+En los estratos se puede ver que la mayor parte de estudiantes que ingresan son de estrato 2 con un 31.48% de estudiantes, luego los de estrato 3 con un 17.58% de estudiantes, en tercer lugar los de estrato 1 con un 17.48% de estudiantes y el porcentaje mas bajo son los estudiantes de estrato 6.
+
+```{r echo=FALSE}
+TABLA=tabla_freq(datab$Estrato, 0)
+
+ggplot(TABLA, aes(x=Categoría, y=`Freq. Rel.`))+
+  geom_bar(stat = "identity", fill="steelblue", color="black")+
+  labs(x="Estrato",y="Frecuencia")+
+  scale_y_continuous(limits = c(0,ifelse(max(TABLA$`Freq. Rel.`)>0.5,1,0.5)), breaks = seq(0,ifelse(max(TABLA$`Freq. Rel.`)>0.5,1,0.5),0.1), labels = percent)+
+  geom_text(aes(x=Categoría, y=`Freq. Rel.`, label=percent(`Freq. Rel.`)),vjust=-0.5, fontface = "bold", size=5)+
+  theme_base()
+```
+
+---
+
+##### Edad de entrada
+
+Aproximadamente el 44.8% de los estudiantes ingresan con 17 años a estudiar, seguido de los estudiantes que ingresan con 18 años con 23.7% del total.
+
+```{r echo=FALSE}
+TABLA=tabla_freq(datab$Edad_entrada, 0)
+
+ggplot(TABLA, aes(x=Categoría, y=`Freq. Rel.`))+
+  geom_bar(stat = "identity", fill="steelblue", color="black")+
+  labs(x="Edad entrada",y="Frecuencia")+
+  scale_y_continuous(limits = c(0,ifelse(max(TABLA$`Freq. Rel.`)>0.5,1,0.5)), breaks = seq(0,ifelse(max(TABLA$`Freq. Rel.`)>0.5,1,0.5),0.1), labels = percent)+
+  geom_text(aes(x=Categoría, y=`Freq. Rel.`, label=percent(`Freq. Rel.`)),vjust=-0.5, fontface = "bold", size=5)+
+  theme_base()
+```
+
+---
+
+##### Ciudad de procedencia
+
+La mayoria de los estudiantes proceden de Cali con un 57.46% del total de los estudiantes, seguido por los estudiantes que ingresan lo que en el set de datos se marco como otras ciudades y el porcentaje mas bajo de estudiantes que ingresan es los estudiantes que provienen de Tuluá.
+
+```{r echo=FALSE}
+TABLA=tabla_freq(datab$Ciudad_proc, 0)
+
+ggplot(TABLA, aes(x=Categoría, y=`Freq. Rel.`))+
+  geom_bar(stat = "identity", fill="steelblue", color="black")+
+  labs(x="Ciudad procedencia",y="Frecuencia")+
+  scale_y_continuous(limits = c(0,ifelse(max(TABLA$`Freq. Rel.`)>0.5,1,0.5)), breaks = seq(0,ifelse(max(TABLA$`Freq. Rel.`)>0.5,1,0.5),0.1), labels = percent)+
+  geom_text(aes(x=Categoría, y=`Freq. Rel.`, label=percent(`Freq. Rel.`)),vjust=-0.5, fontface = "bold", size=5)+
+  theme_base()
+```
+
+---
+
+##### Puntaje global
+
+El puntaje global que los estudiantes obtuvieron en la prueba esta entre 215 y 483, con una media de 343 y se puede observar que los puntajes de los estudiantes se encuentran distribuidos a lo largo de la grafica con los puntajes.
+
+Puntaje minimo de la prueba
+```{r}
+print(min(datab$PG))
+```
+
+Puntaje maximo de la prueba
+```{r}
+print(max(datab$PG))
+```
+
+Puntaje medio de la prueba
+```{r}
+print(mean(datab$PG))
+```
+
+```{r echo=FALSE}
+ggplot(datab, aes(y=PG))+
+    geom_boxplot(fill="steelblue")+
+    coord_flip()+
+    labs(y="Puntaje global")+
+    scale_y_continuous(limits = c(200, 500))+
+    theme_base()+
+    theme(axis.text.y=element_blank(),axis.ticks.y=element_blank())
+```
+
+---
+
+##### Facultades
+
+En las facultades a las que ingresaron los estudiantes se nota que existe una uniformidad con respecto a que los valores no se encuentran muy separados y que los estudiantes ingresan mas a la facultad de ciencias administrativas y economicas, siguiendo la facultad de ingenieria y la facultad de derecho y ciencias sociales, ciencias naturales y ciencia de la salud son los mas equitativos en porcentaje de ingreso de los estudiantes.
+
+```{r echo=FALSE}
+TABLA=tabla_freq(datab$Facultad, 0)
+
+ggplot(TABLA, aes(x=Categoría, y=`Freq. Rel.`))+
+  geom_bar(stat = "identity", fill="steelblue", color="black")+
+  labs(x="Facultad",y="Frecuencia")+
+  scale_y_continuous(limits = c(0,ifelse(max(TABLA$`Freq. Rel.`)>0.5,1,0.5)), breaks = seq(0,ifelse(max(TABLA$`Freq. Rel.`)>0.5,1,0.5),0.1), labels = percent)+
+  geom_text(aes(x=Categoría, y=`Freq. Rel.`, label=percent(`Freq. Rel.`)),vjust=-0.5, fontface = "bold", size=5)+
+  theme_base()
+```
+
+---
+
+#####  Perfil
+
+Segun los datos, el perfil de riesgo, en el cual se encuentran los estudiantes que puedan estar en riesgo de desertar es de un 9% de los estudiantes que ingresan, el cual es un porcentaje muy bajo, y en la grafica siguiente se puede ver que es casi la mitad del porcentaje de los que de verdad desertan.
+
+```{r echo=FALSE}
+TABLA=tabla_freq(datab$Perfil, 0)
+
+ggplot(TABLA, aes(x=Categoría, y=`Freq. Rel.`))+
+  geom_bar(stat = "identity", fill="steelblue", color="black")+
+  labs(x="Perfil",y="Frecuencia")+
+  scale_y_continuous(limits = c(0,ifelse(max(TABLA$`Freq. Rel.`)>0.5,1,0.5)), breaks = seq(0,ifelse(max(TABLA$`Freq. Rel.`)>0.5,1,0.5),0.1), labels = percent)+
+  geom_text(aes(x=Categoría, y=`Freq. Rel.`, label=percent(`Freq. Rel.`)),vjust=-0.5, fontface = "bold", size=5)+
+  theme_base()
+```
+
+---
+
+##### Deserta
+
+Porcentaje de estudiantes que deserta y no deserta, se puede observar que es un porcentaje bajo de estudiantes.
+
+```{r echo=FALSE}
+TABLA=tabla_freq(datab$Deserta, 0)
+
+ggplot(TABLA, aes(x=Categoría, y=`Freq. Rel.`))+
+  geom_bar(stat = "identity", fill="steelblue", color="black")+
+  labs(x="Perfil",y="Frecuencia")+
+  scale_y_continuous(limits = c(0,ifelse(max(TABLA$`Freq. Rel.`)>0.5,1,0.5)), breaks = seq(0,ifelse(max(TABLA$`Freq. Rel.`)>0.5,1,0.5),0.1), labels = percent)+
+  geom_text(aes(x=Categoría, y=`Freq. Rel.`, label=percent(`Freq. Rel.`)),vjust=-0.5, fontface = "bold", size=5)+
+  theme_base()
+```
+
+Punto 2
+===
+
+#### ii) ¿La deserción temprana cómo ha evolucionado a través de las cohortes?  
+
+Se puede observar que la cohorte en la que mas desertaron los estudiantes fue la cohorte de 20171 y con respecto a las otras cohortes, se puede observar que los porcentajes no son muy diferentes, con excepcion de la cohorte de 20182 que desertó un porcentaje menor de estudiantes con respecto a los que no desertaron.
+
+```{r echo=FALSE}
+TABLA_low_raza=as.data.frame(prop.table(table(base$Deserta,base$Cohorte),1))
+      
+ggplot(TABLA_low_raza, aes(x=Var1, y=Freq, fill=Var2))+
+  geom_bar(stat = "identity", color="black")+
+  labs(x="Deserta",y="Frecuencia", fill="Cohorte")+
+  scale_fill_brewer(palette = "Blues")+
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.1), labels = percent)+
+  geom_text(aes(x=Var1, y=Freq, label=percent(Freq, accuracy = 0.1)), position= position_stack(vjust = 0.5), fontface = "bold", size=5)+
+  theme_base()
+```
+
+Punto 3
+===
+
+#### iii) ¿Cuáles variables podrían estar relacionadas con la deserción temprana? ¿Existe algún perfil de riesgo que exploratoriamente podríamos ver?  
+
+##### Deserta vs Género
+
+El porcentaje de hombres que deserta es mayor que el porcentaje de mujeres que deserta y el porcentaje de mujeres que no deserta es mayor al porcentaje de hombres que no deserta.
+
+```{r echo=FALSE}
+TABLA_low_raza=as.data.frame(prop.table(table(datab$Deserta,datab$Género),1))
+      
+ggplot(TABLA_low_raza, aes(x=Var1, y=Freq, fill=Var2))+
+  geom_bar(stat = "identity", color="black")+
+  labs(x="Deserta",y="Frecuencia", fill="Género")+
+  scale_fill_brewer(palette = "Blues")+
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.1), labels = percent)+
+  geom_text(aes(x=Var1, y=Freq, label=percent(Freq, accuracy = 0.1)), position= position_stack(vjust = 0.5), fontface = "bold", size=5)+
+  theme_base()
+```
+
+---
+
+##### Deserta vs Estrato
+
+Entre los porcentajes de estudiantes que desertan no hay mucha diferencia con repecto al estrato, solo que de estratos 5 y 6 deserta un mayor porcentaje de estudiantes de los que no desertan y en estratos 1, 2, 3, 4 deserta un porcentaje menor de los estudiantes que no desertan entre estos estratos.
+
+```{r echo=FALSE}
+TABLA_low_raza=as.data.frame(prop.table(table(datab$Deserta,datab$Estrato),1))
+      
+ggplot(TABLA_low_raza, aes(x=Var1, y=Freq, fill=Var2))+
+  geom_bar(stat = "identity", color="black")+
+  labs(x="Deserta",y="Frecuencia", fill="Estrato")+
+  scale_fill_brewer(palette = "Blues")+
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.1), labels = percent)+
+  geom_text(aes(x=Var1, y=Freq, label=percent(Freq, accuracy = 0.1)), position= position_stack(vjust = 0.5), fontface = "bold", size=5)+
+  theme_base()
+```
+
+---
+
+##### Deserta vs Ciudad de procedencia
+
+Se puede observar que el porcentaje de estudiantes que desertan y son de afuera de Cali es mayor en todos los lugares de procedencia con respecto a los estudiantes que son de Cali y no desertan, por lo cual que los estudiantes que provienen de fuera de Cali deserten.
+
+```{r echo=FALSE}
+TABLA_low_ftv2=as.data.frame(prop.table(table(datab$Deserta,datab$Ciudad_proc),1))
+
+ggplot(TABLA_low_ftv2, aes(x=Var1, y=Freq, fill=Var2))+
+  geom_bar(stat = "identity", color="black")+
+  labs(x="Deserta",y="Frecuencia", fill="Lugar de procedencia")+
+  scale_fill_brewer(palette = "Blues")+
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.1), labels = percent)+
+  geom_text(aes(x=Var1, y=Freq, label=percent(Freq, accuracy = 0.1)), position= position_stack(vjust = 0.5), fontface = "bold", size=5)+
+  theme_base()
+
+```
+
+---
+
+##### Deserta vs Edad de entrada
+
+Del grafico se puede observar que no hay mucha diferencia entre las edades y el porcentaje de estudiantes que deserta, aunque el porcentaje de estudiantes que entran con 18 años o más es mas alto con respecto a los estudiantes que no desertan, de igual forma se puede observar que el porcentaje de estudiantes que no deserta es menor con respecto a los que desertan en edades de 17 o menos.
+
+```{r echo=FALSE}
+TABLA_low_ftv2=as.data.frame(prop.table(table(datab$Deserta,datab$Edad_entrada),1))
+
+ggplot(TABLA_low_ftv2, aes(x=Var1, y=Freq, fill=Var2))+
+  geom_bar(stat = "identity", color="black")+
+  labs(x="Deserta",y="Frecuencia", fill="Edad de entrada")+
+  scale_fill_brewer(palette = "Blues")+
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.1), labels = percent)+
+  geom_text(aes(x=Var1, y=Freq, label=percent(Freq, accuracy = 0.1)), position= position_stack(vjust = 0.5), fontface = "bold", size=5)+
+  theme_base()
+```
+
+---
+
+##### Deserta vs Puntaje global
+
+Se puede observar que la media de los puntajes globales de la prueba Saber 11 de los estudiantes que desertan es menor a la media de los puntajes globales de la prueba Saber 11 que no desertan, tambien que los puntajes globales de la prueba Saber 11 de los estudiantes que desertan estan un poco menos dispersos y que los puntajes globales de la prueba Saber 11 son menores de los estudiantes que desertan a los estudiantes que no desertan.
+
+```{r echo=FALSE}
+ggplot(datab, aes(x=Deserta, y=PG))+
+    geom_boxplot(fill="steelblue")+
+    labs(x="",y="Puntaje global")+
+    theme_base()
+```
+
+---
+
+##### Deserta vs Puntaje de lectura critica
+
+En lectura critica e puede observar que la media de los puntajes de los estudiantes que desertan es menor a la media de los puntajes no desertan y los puntajes de los estudiantes que desetan tienen un puntaje menor.
+
+```{r echo=FALSE}
+ggplot(datab, aes(x=Deserta, y=PLC))+
+    geom_boxplot(fill="steelblue")+
+    labs(x="",y="Puntaje de lectura critica")+
+    theme_base()
+```
+
+---
+
+##### Deserta vs Puntaje de matematicas
+
+En matematicas e puede observar que la media de los puntajes de los estudiantes que desertan es menor a la media de los puntajes no desertan y los puntajes de los estudiantes que desetan tienen un puntaje menor.
+
+```{r echo=FALSE}
+ggplot(datab, aes(x=Deserta, y=PMA))+
+    geom_boxplot(fill="steelblue")+
+    labs(x="",y="Puntaje de matematicas")+
+    theme_base()
+```
+
+---
+
+##### Deserta vs Puntaje de ciencias sociales
+
+En ciencias sociales e puede observar que la media de los puntajes de los estudiantes que desertan es menor a la media de los puntajes no desertan y los puntajes de los estudiantes que desetan tienen un puntaje menor.
+
+```{r echo=FALSE}
+ggplot(datab, aes(x=Deserta, y=PSC))+
+    geom_boxplot(fill="steelblue")+
+    labs(x="",y="Puntaje de ciencias sociales")+
+    theme_base()
+```
+
+---
+
+##### Deserta vs Puntaje de ciencias naturales
+
+En ciencias naturales e puede observar que la media de los puntajes de los estudiantes que desertan es menor a la media de los puntajes no desertan y los puntajes de los estudiantes que desetan tienen un puntaje menor.
+
+```{r echo=FALSE}
+ggplot(datab, aes(x=Deserta, y=PCN))+
+    geom_boxplot(fill="steelblue")+
+    labs(x="",y="Puntaje de ciencias naturales")+
+    theme_base()
+```
+
+---
+
+##### Deserta vs Puntaje de inglés
+
+En inglés e puede observar que la media de los puntajes de los estudiantes que desertan es menor a la media de los puntajes no desertan y los puntajes de los estudiantes que desetan tienen un puntaje menor.
+
+```{r echo=FALSE}
+ggplot(datab, aes(x=Deserta, y=PIN))+
+    geom_boxplot(fill="steelblue")+
+    labs(x="",y="Puntaje de ingles")+
+    theme_base()
+```
+
+---
+
+##### Deserta vs Perfil
+
+La gran mayoria de los estudiantes que desertan estan en perfil de normal, se deberia reajustar el metodo con el cual se elijen a los perfiles de los estudiantes que desertan y no desertan y tambien se puede ver que hay un 7.5% de estudiantes que no desertan y de colocan en perfil de riesgo.
+
+```{r echo=FALSE}
+TABLA_low_ftv2=as.data.frame(prop.table(table(datab$Deserta,datab$Perfil),1))
+
+ggplot(TABLA_low_ftv2, aes(x=Var1, y=Freq, fill=Var2))+
+  geom_bar(stat = "identity", color="black")+
+  labs(x="Deserta",y="Frecuencia", fill="Perfil")+
+  scale_fill_brewer(palette = "Blues")+
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.1), labels = percent)+
+  geom_text(aes(x=Var1, y=Freq, label=percent(Freq, accuracy = 0.1)), position= position_stack(vjust = 0.5), fontface = "bold", size=5)+
+  theme_base()
+```
+
+---
+
+##### Deserta vs Procedencia
+
+El porcentaje de estudiantes que no deserta es menor en los estudiantes que provienen de afuera de Cali que de los estudiantes que provienen de Cali, teniendo una diferencia de aproximadamente el 10% de estudiantes. El porcentaje de estudiantes que deserta es mayor de los estudiantes que provienen fuera de Cali que los que proceden de Cali, pero es un diferencia muy pequeña.  
+De esto se puede obtener que hay relacion entre los estudiantes que desertan y los estudiantes que provienen de fuera de Cali, aumentando el porcentaje de estudiantes que deserta si vienen de fuera de Cali.
+
+```{r echo=FALSE}
+TABLA_low_ftv2=as.data.frame(prop.table(table(datab$Deserta,datab$Proc),1))
+
+ggplot(TABLA_low_ftv2, aes(x=Var1, y=Freq, fill=Var2))+
+  geom_bar(stat = "identity", color="black")+
+  labs(x="Deserta",y="Frecuencia", fill="Procedencia")+
+  scale_fill_brewer(palette = "Blues")+
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.1), labels = percent)+
+  geom_text(aes(x=Var1, y=Freq, label=percent(Freq, accuracy = 0.1)), position= position_stack(vjust = 0.5), fontface = "bold", size=5)+
+  theme_base()
+```
+

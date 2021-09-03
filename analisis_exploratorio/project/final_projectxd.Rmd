@@ -144,7 +144,15 @@ lapply(c(6, 7, 9, 10, 12:24), function(i) boxplot(my_data_2[, i]))
 Errores de digitacion: se puede observar que no existen errores de digitacion en el conjunto de datos.
 
 ```{r echo=FALSE}
-table(my_data_2$HomeTeam)
+unique(my_data_1$HomeTeam)
+```
+
+```{r echo=FALSE}
+unique(my_data_2$HomeTeam)
+```
+
+```{r echo=FALSE}
+unique(my_data_3$HomeTeam)
 ```
 
 ```{r echo=FALSE}
