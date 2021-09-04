@@ -1,0 +1,993 @@
+---
+title: "Taller Grupal 2"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    self_contained: true
+
+---
+
+```{r setup, include=FALSE}
+  knitr::opts_chunk$set(echo = TRUE)
+
+  paquetes <- c("knitr", "ggplot2", "plyr", "dplyr", "readxl", "flexdashboard", "plotly", 
+                "Hmisc", "ggthemes", "scales")
+
+  has   <- paquetes %in% rownames(installed.packages())
+  
+  if(any(!has)) install.packages(paquetes[!has])
+  
+  library("knitr")
+  library("ggplot2")
+  library("plyr")
+  library("dplyr")
+  library("readxl")
+  library("flexdashboard")
+  library("plotly")
+  library("Hmisc")
+  library("ggthemes")
+  library("scales")
+
+  descriptivas<- function(x){data.frame("MEDIDA"=c("Observaciones", "Mínimo", "1er Q", "Media", "Mediana", "Desv Est", "3er Q", "Máximo", "Asimetría", "Curtosis", "atípico leve<", "atípico leve>","atípico extremo<","atípico extremo>", "Err Est Media", "IC(95%) Media Up", "IC(95%) Media Down"),"VALOR"=format(c(length(na.omit(x)), min(na.omit(x)), quantile(na.omit(x), prob=0.25), mean(na.omit(x)), median(na.omit(x)), sd(na.omit(x)), quantile(na.omit(x), prob=0.75), max(na.omit(x)), skewness(na.omit(x)), kurtosis(na.omit(x)), (2.5*quantile(na.omit(x),prob=0.25)-1.5*quantile(na.omit(x), prob=0.75)),(2.5*quantile(na.omit(x),prob=0.75)-1.5*quantile(na.omit(x), prob=0.25)),(4*quantile(na.omit(x),prob=0.25)-3*quantile(na.omit(x), prob=0.75)),(4*quantile(na.omit(x),prob=0.75)-3*quantile(na.omit(x), prob=0.25)), ((sd(na.omit(x))/sqrt(length(na.omit(x))))), (mean(na.omit(x))+1.96*(sd(na.omit(x))/sqrt(length(na.omit(x))))), (mean(na.omit(x))-1.96*((sd(na.omit(x))/sqrt(length(na.omit(x))))))), scientific = F))}
+  
+  # Generar un Tabla de Frecuencia
+  tabla_freq<- function(x,total=1,na="ifany"){
+    if (total==1) {
+      M=data.frame("Categoría"=table(x, useNA = na), "Rel"=prop.table(table(x,useNA = na)))[,-3]
+    names(M)=c("Categoría","Freq. Abs.","Freq. Rel.")
+    M$Categoría=as.character(M$Categoría)
+    M[nrow(M)+1,]=c("Total",sum(M$`Freq. Abs.`),sum(M$`Freq. Rel.`))
+    M$`Freq. Rel.`=as.numeric(M$`Freq. Rel.`)
+    M$`Freq. Abs.`=as.numeric(M$`Freq. Abs.`)
+    M
+    } else{
+      M=data.frame("Categoría"=table(x, useNA = na), "Rel"=prop.table(table(x,useNA = na)))[,-3]
+      names(M)=c("Categoría","Freq. Abs.","Freq. Rel.")
+      M
+    }
+  }
+  
+  descriptivas2<-function(Continua,Categorías){
+    x1=aggregate.data.frame(Continua, by=list(Categorías), FUN=function(x){length(na.omit(x))})
+    names(x1)=c("Categoría","Obs")
+    x2=aggregate.data.frame(Continua, by=list(Categorías), FUN=function(x){min(na.omit(x))})
+    names(x2)=c("Categoría","Mínimo")
+    x3=aggregate.data.frame(Continua, by=list(Categorías), FUN=function(x){quantile(na.omit(x), prob =0.25)})
+    names(x3)=c("Categoría","1er Q")
+    x4=aggregate.data.frame(Continua, by=list(Categorías), FUN=function(x){median(na.omit(x))})
+    names(x4)=c("Categoría","Mediana")
+    x5=aggregate.data.frame(Continua, by=list(Categorías), FUN=function(x){mean(na.omit(x))})
+    names(x5)=c("Categoría","Media")
+    x6=aggregate.data.frame(Continua, by=list(Categorías), FUN=function(x){quantile(na.omit(x), prob =0.75)})
+    names(x6)=c("Categoría","3er Q")
+    x7=aggregate.data.frame(Continua, by=list(Categorías), FUN=function(x){max(na.omit(x))})
+    names(x7)=c("Categoría","Máximo")
+    x8=aggregate.data.frame(Continua, by=list(Categorías), FUN=function(x){sd(na.omit(x))})
+    names(x8)=c("Categoría","Desv Est")
+    x9=aggregate.data.frame(Continua, by=list(Categorías), FUN=function(x){skewness(na.omit(x))})
+    names(x9)=c("Categoría","Asimetría")
+    x10=aggregate.data.frame(Continua, by=list(Categorías), FUN=function(x){kurtosis(na.omit(x))})
+    names(x10)=c("Categoría","Curtosis")
+    cbind(x1,x2,x3,x4,x5,x6,x7,x8,x9,x10)[,-seq(3,19,2)]
+  }
+
+
+  
+```
+
+```{r load_and_transform_data, include=FALSE}
+  load("datasets/performance.RData")
+  
+  # Rename dataset variable to df.
+  df = data.frame(base_f)
+  # rm(base_f)
+  
+  # To factor variables.
+  
+  ## Transform Sex english to panish.
+  
+  df$sex = factor(df$sex, labels = c("Femenino", "Masculino"))
+  
+  ## Transform address english to spanish.
+  df$address = factor(df$address, labels = c("Rural", "Urbano"))
+  
+  ## Transform pstatus english to spanish.
+  df$Pstatus = factor(df$Pstatus, labels = c("Apartados", "Viviendo Juntos"))
+  
+  ## Transform Medu to factor and add labels.
+  df$Medu = as.factor(df$Medu)
+  df$Medu = factor(df$Medu, 
+                   labels = c("Ninguna o Educación primaría", 
+                              "5th a 9th grado", 
+                              "Educación Secundaría",
+                              "Educación más alta")
+                   )
+  
+  ## Transform Fedu to factor and add labels.
+  df$Fedu = as.factor(df$Fedu)
+  df$Fedu = factor(df$Fedu, 
+                   labels = c("Ninguna o Educación primaría", 
+                              "5th a 9th grado", 
+                              "Educación Secundaría",
+                              "Educación más alta")
+                   )
+  
+  ## Reason tranform english to spanish
+  df$reason = factor(df$reason, 
+                   labels = c("Curso de Preferencia", 
+                              "Cerca de casa", 
+                              "Otra",
+                              "Reputación del colegio")
+                   )
+  
+  ## traveltime
+  df$traveltime = as.factor(df$traveltime)
+  df$traveltime = factor(df$traveltime, 
+                   labels = c("Bajo", 
+                              "Moderado", 
+                              "Alto")
+                   )
+  
+  ## paid
+  df$paid = factor(df$paid, 
+                   labels = c("No", 
+                              "Si")
+                   )  
+  
+  ## internet
+  df$internet = factor(df$internet, 
+                   labels = c("No", 
+                              "Si")
+                   )
+  
+  
+  ## absences
+  df$absences = factor(df$absences, 
+                   labels = c("Baja",
+                              "Media",
+                              "Alta",
+                              "Muy Alta")
+                   )
+  
+  # Aprobado
+  df$aprobado = df$G3 > 12
+  
+```
+
+```{r analisis_univariado, include=FALSE}
+
+
+  ## Sexo de lo Estudiantes
+
+  table_students_sex = tabla_freq(df$sex,0)
+
+  
+  sex_frequency_graph = plot_ly(table_students_sex,
+                                labels= ~Categoría,
+                                values=~`Freq. Abs.`,
+                                textinfo = 'label+percent',
+                                type = 'pie')
+  sex_frequency_graph <- sex_frequency_graph %>% layout(title = 'Distribución del sexo de los estudiantes',
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+  
+  # Edad de los estudiantes
+    
+  box_plot_age = plot_ly(x = df$age, type = "box", name=" ")
+  
+  histogram_plot_age = plot_ly(data=df, x= ~age, type="histogram", name=" ") %>% layout(xaxis = list(title = 'Edad', range = c(15,22)))
+  
+ fig_age <-  plotly::subplot(box_plot_age, histogram_plot_age, nrows = 2, margin = 0.1)
+  
+  fig_age <- fig_age %>%layout(showlegend = FALSE, title = 'Diagrama de cajas y gráfico de barras para la edad')
+  
+  
+  # Residencia
+  
+  tabla_residencia =tabla_freq(df$address,0)
+
+  
+  plot_address =  ggplot(tabla_residencia, 
+                         aes(x=Categoría, 
+                             y=`Freq. Rel.`,
+                             text= sprintf("Categoría: %s\nFreq. Rel.: %s", Categoría,  paste0(round(`Freq. Rel.`, 2) *100, "%") )
+                             ))+
+    geom_bar(
+      stat = "identity", 
+      fill="steelblue", 
+      color="black")+
+    labs(
+      title="Distribución del tipo de residencia de los estudiantes",
+      x="Tipo de Residencia", 
+      y="Frecuencia")+
+    scale_y_continuous(limits = c(0, 1), 
+                       breaks = seq(0, 1, 0.2), 
+                       labels = percent)+
+      geom_text(
+        aes(x=Categoría, 
+            y=`Freq. Rel.`, 
+            label=percent(`Freq. Rel.`)
+            ),
+        position = position_dodge(width=0.9),
+        vjust=-0.25, 
+        fontface = "bold", 
+        size=4)+
+      theme_base()
+  
+  plot_address = ggplotly(plot_address, tooltip = "text", dynamicTicks = T)
+  
+  
+  ## Estado de Convivencia Padres
+  
+  tabla_Pstatus =tabla_freq(df$Pstatus, 0)
+
+  
+  plot_Pstatus =  ggplot(tabla_Pstatus, 
+                         aes(x=Categoría, 
+                             y=`Freq. Rel.`,
+                             text= sprintf("Categoría: %s\nFreq. Rel.: %s", Categoría,  paste0(round(`Freq. Rel.`, 2) *100, "%") )
+                             ))+
+    geom_bar(
+      stat = "identity", 
+      fill="steelblue", 
+      color="black")+
+    labs(
+      title="Distribución del estado de convivencia de los padres",
+      x="Estado de convivencia", 
+      y="Frecuencia")+
+    scale_y_continuous(limits = c(0, 1), 
+                       breaks = seq(0, 1, 0.2), 
+                       labels = percent)+
+      geom_text(
+        aes(x=Categoría, 
+            y=`Freq. Rel.`, 
+            label=percent(`Freq. Rel.`)
+            ),
+        position = position_dodge(width=0.9),
+        vjust=-0.25, 
+        fontface = "bold", 
+        size=4)+
+      theme_base()
+  
+  plot_Pstatus = ggplotly(plot_Pstatus, tooltip = "text", dynamicTicks = T)
+  
+  ## Nivel de Educación de la madre
+  
+  tabla_Medu =tabla_freq(df$Medu, 0)
+
+  
+  plot_Medu =  ggplot(tabla_Medu, 
+                         aes(x=Categoría, 
+                             y=`Freq. Rel.`,
+                             text= sprintf("Categoría: %s\nFreq. Rel.: %s", Categoría,  paste0(round(`Freq. Rel.`, 2) *100, "%") )
+                             ))+
+    geom_bar(
+      stat = "identity", 
+      fill="steelblue", 
+      color="black")+
+    coord_flip()+
+    labs(
+      title="Distribución del nivel de educación de las madres",
+      x="Nivel de educación", 
+      y="Frecuencia")+
+    scale_y_continuous(
+      limits = c(0, ifelse( max(tabla_Medu$`Freq. Rel.`)> 0.5,1, 0.5)),
+      breaks = seq(0,ifelse(max(tabla_Medu$`Freq. Rel.`)>0.5,1,0.5),0.1),
+      labels = percent)+
+      geom_text(
+        aes(
+          x=Categoría, 
+          y=`Freq. Rel.`, 
+          label=percent(`Freq. Rel.`)
+        ),
+        position = position_dodge(width=0.9),
+        hjust=-0.25, 
+        fontface = "bold", 
+        size=4)+
+      theme_base()
+  
+  plot_Medu = ggplotly(plot_Medu, tooltip = "text")
+  
+  
+  ## Nivel Educación del Padre
+  
+  tabla_Fedu =tabla_freq(df$Fedu, 0)
+
+  
+  plot_Fedu =  ggplot(tabla_Fedu, 
+                         aes(x=Categoría, 
+                             y=`Freq. Rel.`,
+                             text= sprintf("Categoría: %s\nFreq. Rel.: %s", Categoría,  paste0(round(`Freq. Rel.`, 2) *100, "%") )
+                             ))+
+    geom_bar(
+      stat = "identity", 
+      fill="steelblue", 
+      color="black")+
+    coord_flip()+
+    labs(
+      title="Distribución del nivel de educación de los padres",
+      x="Nivel de educación", 
+      y="Frecuencia")+
+    scale_y_continuous(
+      limits = c(0, ifelse( max(tabla_Fedu$`Freq. Rel.`)> 0.5, 1, 0.5)),
+      breaks = seq(0,ifelse(max(tabla_Fedu$`Freq. Rel.`)>0.5,1,0.5),0.1),
+      labels = percent)+
+      geom_text(
+        aes(
+          x=Categoría, 
+          y=`Freq. Rel.`, 
+          label=percent(`Freq. Rel.`)
+        ),
+        position = position_dodge(width=0.9),
+        hjust=-0.25, 
+        fontface = "bold", 
+        size=4)+
+      theme_base()
+  
+  plot_Fedu = ggplotly(plot_Fedu, tooltip = "text")
+  
+  
+  ## Razón para escoger la escuela.
+  
+  tabla_reason =tabla_freq(df$reason, 0)
+
+  
+  plot_reason =  ggplot(tabla_reason, 
+                         aes(x=Categoría, 
+                             y=`Freq. Rel.`,
+                             text= sprintf("Categoría: %s\nFreq. Rel.: %s", Categoría,  paste0(round(`Freq. Rel.`, 2) *100, "%") )
+                             ))+
+    geom_bar(
+      stat = "identity", 
+      fill="steelblue", 
+      color="black")+
+    coord_flip()+
+    labs(
+      title="Razones para escoger la escuela",
+      x="Razones", 
+      y="Frecuencia")+
+    scale_y_continuous(
+      limits = c(0, ifelse( max(tabla_reason$`Freq. Rel.`)> 0.5, 1, 0.5)),
+      breaks = seq(0,ifelse(max(tabla_reason$`Freq. Rel.`)>0.5,1,0.5),0.1),
+      labels = percent)+
+      geom_text(
+        aes(
+          x=Categoría, 
+          y=`Freq. Rel.`, 
+          label=percent(`Freq. Rel.`)
+        ),
+        position = position_dodge(width=0.9),
+        hjust=-0.25, 
+        fontface = "bold", 
+        size=4)+
+      theme_base()
+  
+  plot_reason = ggplotly(plot_reason, tooltip = "text")
+  
+  
+  ## Tiempo que toma ir de la casa a la escuela
+  
+  tabla_traveltime =tabla_freq(df$traveltime, 0)
+
+  
+  plot_traveltime =  ggplot(tabla_traveltime, 
+                         aes(x=Categoría, 
+                             y=`Freq. Rel.`,
+                             text= sprintf("Categoría: %s\nFreq. Rel.: %s", Categoría,  paste0(round(`Freq. Rel.`, 2) *100, "%") )
+                             ))+
+    geom_bar(
+      stat = "identity", 
+      fill="steelblue", 
+      color="black")+
+    coord_flip()+
+    labs(
+      title="Tiempo le toma a los estudiantes ir de la casa a la escuela",
+      x="Tiempo de Viaje", 
+      y="Frecuencia")+
+    scale_y_continuous(
+      limits = c(0, ifelse( max(tabla_traveltime$`Freq. Rel.`)> 0.5, 1, 0.5)),
+      breaks = seq(0,ifelse(max(tabla_traveltime$`Freq. Rel.`)>0.5,1,0.5),0.1),
+      labels = percent)+
+      geom_text(
+        aes(
+          x=Categoría, 
+          y=`Freq. Rel.`, 
+          label=percent(`Freq. Rel.`)
+        ),
+        position = position_dodge(width=0.9),
+        hjust=-0.25, 
+        fontface = "bold", 
+        size=4)+
+      theme_base()
+  
+  plot_traveltime = ggplotly(plot_traveltime, tooltip = "text")
+  
+  
+  ## clases extras pagadas en la asignatura de matematica
+
+  table_paid = tabla_freq(df$paid,0)
+
+  
+  plot_paid = plot_ly(table_paid,
+                                labels= ~Categoría,
+                                values=~`Freq. Abs.`,
+                                textinfo = 'label+percent',
+                                type = 'pie')
+  plot_paid <- plot_paid %>% layout(title = '¿Pagó clases extras de matemáticas?',
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+  
+  ##  Acceso a internet en el hogar
+
+  table_internet = tabla_freq(df$internet,0)
+
+  
+  plot_internet = plot_ly(table_internet,
+                                labels= ~Categoría,
+                                values=~`Freq. Abs.`,
+                                textinfo = 'label+percent',
+                                type = 'pie')
+  plot_internet <- plot_internet %>% layout(title = '¿Cuenta con internet en el hogar?',
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+  
+  ## Número de faltas al colegio
+  
+  tabla_absences =tabla_freq(df$absences, 0)
+
+  
+  plot_absences =  ggplot(tabla_absences, 
+                         aes(x=Categoría, 
+                             y=`Freq. Rel.`,
+                             text= sprintf("Categoría: %s\nFreq. Rel.: %s", Categoría,  paste0(round(`Freq. Rel.`, 2) *100, "%") )
+                             ))+
+    geom_bar(
+      stat = "identity", 
+      fill="steelblue", 
+      color="black")+
+    coord_flip()+
+    labs(
+      title="Cantidad de faltas durante el último año electivo",
+      x="Cantidad de faltas", 
+      y="Frecuencia")+
+    scale_y_continuous(
+      limits = c(0, ifelse( max(tabla_absences$`Freq. Rel.`)> 0.5, 1, 0.5)),
+      breaks = seq(0,ifelse(max(tabla_absences$`Freq. Rel.`)>0.5,1,0.5),0.1),
+      labels = percent)+
+      geom_text(
+        aes(
+          x=Categoría, 
+          y=`Freq. Rel.`, 
+          label=percent(`Freq. Rel.`)
+        ),
+        position = position_dodge(width=0.9),
+        hjust=-0.25, 
+        fontface = "bold", 
+        size=4)+
+      theme_base()
+  
+  plot_absences = ggplotly(plot_absences, tooltip = "text")
+  
+  
+  ## Nota Final
+  
+  box_plot_G3 = plot_ly(x = df$G3, type = "box", name=" ")
+  
+  histogram_plot_G3 = plot_ly(data=df, x= ~G3, type="histogram", name=" ") %>% layout(xaxis = list(title = 'Nota Final', range = c(0,20)))
+  
+ fig_G3 <-  plotly::subplot(box_plot_G3, histogram_plot_G3, nrows = 2, margin = 0.1)
+  
+  fig_G3 <- fig_G3 %>%layout(showlegend = FALSE, title = 'Diagrama de cajas y gráfico de barras para la Nota Final')
+  
+  
+  ## Aprobado
+  
+  tabla_aprobado =tabla_freq(df$aprobado,0)
+
+  
+  plot_aprobado =  ggplot(tabla_aprobado, 
+                         aes(x=Categoría, 
+                             y=`Freq. Rel.`,
+                             text= sprintf("Categoría: %s\nFreq. Rel.: %s", Categoría,  paste0(round(`Freq. Rel.`, 2) *100, "%") )
+                             ))+
+    geom_bar(
+      stat = "identity", 
+      fill="steelblue", 
+      color="black")+
+    labs(
+      title="Distribución de Estudiantes Aprobados",
+      x="Tipo de Calififcación Final", 
+      y="Frecuencia")+
+    scale_y_continuous(limits = c(0, 1), 
+                       breaks = seq(0, 1, 0.2), 
+                       labels = percent)+
+      geom_text(
+        aes(x=Categoría, 
+            y=`Freq. Rel.`, 
+            label=percent(`Freq. Rel.`)
+            ),
+        position = position_dodge(width=0.9),
+        vjust=-0.25, 
+        fontface = "bold", 
+        size=4)+
+      theme_base()
+  
+  plot_aprobado = ggplotly(plot_aprobado, tooltip = "text", dynamicTicks = T)
+  
+
+```
+
+```{r analisis_bivariado, include=FALSE}
+  # Sex
+
+  plot_g3_sex = ggplot(df, aes(
+                         x=G3, 
+                         fill=sex
+                         ))+
+    geom_density(alpha=0.5)+
+    labs(
+      x="Nota Final", 
+      fill="Género"
+      )+
+    theme_base()
+   
+   plot_g3_sex = ggplotly(plot_g3_sex)
+   
+   plot2_g3_sex = ggplot(df, aes(x=G3, fill=sex))+
+    geom_histogram(position="identity",color="white",alpha=0.5, bins=17)+
+    labs(x="Nota Final", fill="Género")+
+    theme_base()
+   
+   plot2_g3_sex = ggplotly(plot2_g3_sex)
+
+
+  # Age
+   
+  plot_g3_age = ggplot(df, aes(x=age, y=G3))+
+    geom_point(color="blue")+
+    geom_smooth(se = FALSE, method = lm)+
+    labs(x="Edad",y="Nota Final")+
+    theme_bw()
+  
+  plot_g3_age = ggplotly(plot_g3_age)
+
+  # address
+   
+  plot_g3_address = ggplot(df, aes(x=G3, fill=address))+
+    geom_histogram(position="identity",color="white",alpha=0.5, bins=17)+
+    labs(x="Nota Final", fill="Tipo de Residencia")+
+    theme_base()
+   
+   plot_g3_address = ggplotly(plot_g3_address)
+   
+
+  # Pstatus
+   
+   
+   plot_g3_Pstatus = ggplot(df, aes(
+                         x=G3, 
+                         fill=Pstatus
+                         ))+
+    geom_density(alpha=0.5)+
+    labs(
+      x="Nota Final", 
+      fill="Estado de Convivencia de los Padres"
+      )+
+    theme_base()
+   
+   plot_g3_Pstatus = ggplotly(plot_g3_Pstatus)
+  
+  # Medu
+   
+   
+
+  # Fedu
+   
+   
+  
+  # reason
+   
+   
+
+  # traveltime
+   
+   
+
+  # paid
+   
+   
+
+  # internet
+   
+   
+
+  # absences
+
+
+```
+
+```{r analisis_bivariado_tasa_aprobacion, include=FALSE}
+  
+
+```
+
+Row {.tabset}
+-------------------------------------
+
+### Carga y Preparación de los Datos
+
+Realizado por
+
+- Cristhian Castillo  
+- Kevin Zarama
+
+Para el análisis de los factores que influyen en el desempeño en un curso de matemáticas se cuenta con un conjunto de datos de `r nrow(df)` registros y `r ncol(df)` variables. Este conjunto contiene la información del seguimiento que un colegio realizó a sus estudiantes en el último año.
+
+El conjunto de datos se entrega limpio, solo es necesario realizar modificaciones en los tipos de datos de las variables Medu, Fedu y traveltime que tienen tipo númerico y es necesario pasarlas a factor, también se pasan las variables de ingles a español para un mejor entendimiento. Adiccionalmente se le agrega la columna de aprobado para saber si el usuario está aprobado o no.
+
+Una vez realizado estos cambios, se **tiene que las variables son**:
+
+- sex: Sexo del estudiante.
+  -   Femenino.
+  -   Masculino.
+  
+- age: Edad del estudiante, los valores van del 15 al 22.
+
+- address: Tipo de residencia.
+  -   Rural.
+  -   Urbano.
+  
+- Pstatus: - Estado de Convivencia de los padres.
+  -   Viviendo Juntos.
+  -   Apartados.
+
+- Medu: Nivel de Educación de la madre.
+  -   Ninguna o Educación primaría (4th Grado).
+  -   5th a 9th grado.
+  -   Educación Secundaría.
+  -   Educación más alta.
+
+- Fedu: Nivel de educación del padre.
+  -   Ninguna o Educación primaría (4th Grado).
+  -   5th a 9th grado.
+  -   Educación Secundaría.
+  -   Educación más alta.
+
+- reason: Razón para escoger la escuela.
+  -   Cerca de casa.
+  -   Reputación del colegio.
+  -   Curso de Preferencia.
+  -   Otra.
+
+- traveltime: Tiempo que toma ir de la casa a la escuela.
+  -   Bajo: Menor a 15 min.
+  -   Moderado:  - 15 to 30 min.
+  -   Alto: Mayor a 30 min.
+
+- paid: clases extras pagadas en la asignatura de matematicas.
+  -   Si.
+  -   No.
+
+- internet: Acceso a internet en el hogar.
+  -   Si.
+  -   No.
+
+- absences: Número de faltas al colegio.
+  -   Baja: 0 a 5 faltas.
+  -   Media: 6 a 10 faltas.
+  -   Alta: 11 a 20 faltas.
+  -   Muy Alta: más de 20 faltas.
+
+- G3: Nota Final (Va desde 0 a 20)
+
+- Aprobado: Si es estudiante aprobó o no la asignatura.
+  -   Aprobado (Nota final mayor a 12).
+  -   Reprobado (Nota final mayor o igual a 12).
+
+### Análisis Univariado
+
+#### **Análisis sobre el sexo de los estudiantes**
+
+La distribución de hombres y mujeres dentro del conjunto de datos es bastante equilibrada habiendo ligeramente (13) más mujeres que hombres. 
+
+```{r graph_sex_frequency, echo=FALSE, fig.align = 'center', message = FALSE}
+sex_frequency_graph
+```
+
+#### **Análisis sobre la edad de los estudiantes**
+
+Al rededor del 70% de los estudiantes tienen una edad entre los 16 a 18 años. Algo que también es importante de este conjunto de datos es que hay 76 estudiantes con 15 años en el último año del colegio que es algo interesante de este conjunto de datos.
+
+```{r graph_age, echo=FALSE, fig.align = 'center', message = FALSE}
+fig_age
+```
+
+#### **Análisis sobre el tipo de residencia de los estudiantes**
+
+El 78% de los estudiantes viven en residencias de tipo urbano donde solo el 22% lo hacen en rural. Por lo que es muy probable que el colegio sea un colegio dentro de alguna urbe y no un colegio rural.
+
+```{r graph_address, echo=FALSE, fig.align = 'center', message = FALSE}
+plot_address
+```
+
+
+#### **Análisis sobre el estado de convivencia de los padres**
+
+El 89% de los padres de los estudiantes viven juntos, por lo que son familias que posiblemente son más estables y que podrían contribuir en el rendimiento de los estudiantes.
+
+```{r graph_Pstatus, echo=FALSE, fig.align = 'center', message = FALSE}
+plot_Pstatus
+```
+
+
+#### **Análisis sobre el nivel de educación de la madre**
+
+Más de 35% de las madres tienen una educación más alta que educación secundaría, sin embargo la gran mayoría de la población, el 65% restante tiene una educación menor o igual a la secundaría y casi un 15% tan solo tiene educación primaría o no tiene educación. Estos datos pueden ser una imagen de la penetración de la educación en tiempos anteriores.
+
+```{r graph_Medu, echo=FALSE, fig.align = 'center', message = FALSE}
+plot_Medu
+```
+
+#### **Análisis sobre el nivel de educación del padre**
+
+
+
+```{r graph_Fedu, echo=FALSE, fig.align = 'center', message = FALSE}
+plot_Fedu
+```
+
+#### **Análisis sobre la razón para escoger la escuela**
+
+
+
+```{r graph_reason, echo=FALSE, fig.align = 'center', message = FALSE}
+plot_reason
+```
+
+#### **Análisis sobre el tiempo tomado para ir a la escuela**
+
+
+
+```{r graph_traveltime, echo=FALSE, fig.align = 'center', message = FALSE}
+plot_traveltime
+```
+
+#### **Análisis sobre el pago de clases de matemáticas extra a los estudiantes**
+
+
+
+```{r graph_paid, echo=FALSE, fig.align = 'center', message = FALSE}
+plot_paid
+```
+
+#### **Análisis sobre el acceso a internet en el hogar**
+
+
+
+```{r graph_internet, echo=FALSE, fig.align = 'center', message = FALSE}
+plot_internet
+```
+
+#### **Análisis sobre las faltas al colegio**
+
+
+
+```{r graph_absences, echo=FALSE, fig.align = 'center', message = FALSE}
+plot_absences
+```
+
+#### **Análisis sobre la nota final**
+
+
+
+```{r graph_G3, echo=FALSE, fig.align = 'center', message = FALSE}
+fig_G3
+```
+
+#### **Análisis sobre los aprobados**
+
+Este es un dato bastante preocupante, puesto que el 63% de los estudiantes no aprobaron el curso de matemáticas, es decir que no obtuvieron el resultado minimo esperado por la institución para poder graduarse.
+
+```{r graph_aprobado, echo=FALSE, fig.align = 'center', message = FALSE}
+plot_aprobado
+```
+
+### Análisis Bivariado
+
+#### Género vs Nota final
+
+Comparación de Generos y nota final, se puede observar que la nota final es un poco más alta en personas de género masculino que en personas de género femenino.
+
+```{r echo=FALSE, fig.align = 'center', message = FALSE}
+ggplot(df, aes(x=sex, y=G3))+
+    geom_boxplot(fill="steelblue")+
+    labs(x="Género",y="Nota final")+
+    theme_base()
+```
+
+#### Edad vs Nota final
+
+Comparación de la edad y la nota final, se puede observar que la nota final es mas baja en edades mayores y que en edades menores la nota final es mayor, tal como se muestra en la grafica.
+
+```{r echo=FALSE, fig.align = 'center', message = FALSE}
+ggplot(df, aes(x=age, fill=G3))+
+    geom_histogram(position="identity",color="steelblue",fill="steelblue",alpha=0.5, bins=17)+
+    labs(x="Edad", y="Nota final")+
+    theme_base()
+```
+
+#### Tipo de dirección de la casa vs Nota final
+
+Comparación del tipo de dirección de la casa en la que viven los estudiantes y la nota final, en la grafica se puede observar que los estudiantes de tipo de dirección urbana es más alto que los estudiantes de dirección rural.
+
+```{r echo=FALSE, fig.align = 'center', message = FALSE}
+ggplot(df, aes(x=address, y=G3))+
+    geom_boxplot(fill="steelblue")+
+    labs(x="Tipo de dirección de la casa",y="Nota final")+
+    theme_base()
+```
+#### Estado de convivencia de los padres vs Nota final
+
+Comparación de el estado de convivencia de los padres con la nota final, se puede observar que no existe mucha diferencia entre el estado de convivencia de los padres y la nota final.
+
+```{r echo=FALSE, fig.align = 'center', message = FALSE}
+ggplot(df, aes(x=Pstatus, y=G3))+
+    geom_boxplot(fill="steelblue")+
+    labs(x="Estado de convivencia de los padres",y="Nota final")+
+    theme_base()
+```
+
+#### Educación de la madre vs Nota final
+
+Comparación de el nivel de educación de la madre y la nota final, se puede observar que la nota del examen de los estudiantes es un poco mas alta en cuanto sea el nivel de educación de la madre.
+
+```{r echo=FALSE, fig.align = 'center', message = FALSE}
+ggplot(df, aes(x=Medu, y=G3))+
+    geom_boxplot(fill="steelblue")+
+    labs(x="Educación de la madre",y="Nota final")+
+    theme_base()
+```
+
+#### Educación del padre vs Nota final
+
+Comparación de el nivel de educación del padre y la nota final, se puede observar que la nota del examen de los estudiantes no es tan notoria como en el caso del nivel de educacion de la madre, pero sigue el mismo patrón, aumentando la puntuación de el examen de los estudiantes a medida de que el nivel de educación del padre aumenta.
+
+```{r echo=FALSE, fig.align = 'center', message = FALSE}
+ggplot(df, aes(x=Fedu, y=G3))+
+    geom_boxplot(fill="steelblue")+
+    labs(x="Educación del padre",y="Nota final")+
+    theme_base()
+```
+
+#### Razon de eleccion de la escuela vs Nota final
+
+Razón de la elección de la escuela vs la nota final del examen, en esta comparación no se nota una diferencia muy notoria en los resultados de examenes de los estudiantes.
+
+```{r echo=FALSE, fig.align = 'center', message = FALSE}
+ggplot(df, aes(x=reason, y=G3))+
+    geom_boxplot(fill="steelblue")+
+    labs(x="Razon de eleccion de la escuela",y="Nota final")+
+    theme_base()
+```
+
+#### Viaje de la casa al colegio vs Nota final
+
+Comparación del tiempo de viaje que los estudiantes desde su casa hasta el colegio, se puede observar que no existe una diferencia muy notoria entre el resultado que obtuvieron los estudiantes y el tiempo de viaje de los estudiantes desde su casa hasta el colegio.
+
+```{r echo=FALSE, fig.align = 'center', message = FALSE}
+ggplot(df, aes(x=traveltime, y=G3))+
+    geom_boxplot(fill="steelblue")+
+    labs(x="Viaje de la casa al colegio",y="Nota final")+
+    theme_base()
+```
+
+#### Clases extra pagadas dentro de la asignatura vs Nota final
+
+Comparación de clases extra pagadas dentro de la asignatura de matematicas por parte de los estudiantes y la nota final, los resultados de los estudiantes no difieren mucho en comparacion con que si el estudiante paga clases extra pagadas dentro de la asignatura o no lo pagan.
+
+```{r echo=FALSE, fig.align = 'center', message = FALSE}
+ggplot(df, aes(x=paid, y=G3))+
+    geom_boxplot(fill="steelblue")+
+    labs(x="Clases extra pagadas dentro de la asignatura",y="Nota final")+
+    theme_base()
+```
+
+#### Acceso a internet en la casa vs Nota final
+
+Acceso a internet en la casa de los estudiantes vs la nota final que el estudiante obtuvo en el examen, se puede observar que existe una leve diferencia a favor de los estudiantes que tienen acceso a internet con respecto a los estudiantes que no tienen acceso a internet en la casa.
+
+```{r echo=FALSE, fig.align = 'center', message = FALSE}
+ggplot(df, aes(x=internet, y=G3))+
+    geom_boxplot(fill="steelblue")+
+    labs(x="Acceso a internet en la casa",y="Nota final")+
+    theme_base()
+```
+
+#### Número de ausencias escolares vs Nota final
+
+En la comparación de el número de ausencias escolares y la nota final del examen se puede observar que hay una relacion en los estudiantes que tienen pocas faltas y los estudiantes que tienen nota alta en el examen.
+
+```{r echo=FALSE, fig.align = 'center', message = FALSE}
+ggplot(df, aes(x=absences, y=G3))+
+    geom_boxplot(fill="steelblue")+
+    labs(x="Número de ausencias escolares",y="Nota final")+
+    theme_base()
+```
+
+### Análisis Multivariado
+
+#### Puntaje final vs Edades vs Género de los estudiantes
+
+Se puede observar que en la grafica no hay mucha diferencia entre las variables seleccionadas, tales como que no hay mucha diferencia entre géneros, edades y puntajes de los estudiantes.
+
+```{r echo=FALSE, fig.align = 'center', message = FALSE}
+ggplot(df,aes(x=G3,y=age,color=sex))+
+  geom_point(size=4)+
+  labs(x="Puntaje total",y="Edad", color="Género")+
+  theme_classic()
+```
+
+### Bono
+
+#### Hacer el análisis bivariado con al menos 3 variables explicativas, pero siendo la variable objetivo la tasa de aprobación (aprobar es nota mayor a 12).
+
+En la comparación que si los estudiantes tienen internet en casa y la tasa de aprovación se puede observar que hay una diferencia considerable, teniendo mayor tasa de aprobación los estudiantes que si tienen internet en casa en relación a los estudiantes que no tienen internet en casa.
+
+```{r echo=FALSE, fig.align = 'center', message = FALSE}
+TABLA_income=as.data.frame(prop.table(table(df$internet,df$aprobado),1))
+
+ ggplot(TABLA_income, aes(x=Var1, y=Freq, fill=Var2))+
+  geom_bar(stat = "identity", color="black")+
+   labs(x="Internet",y="Frecuencia", fill="Tasa de aprobación")+
+  scale_fill_brewer(palette = "Blues")+
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.2), labels = percent)+
+  geom_text(aes(x=Var1, y=Freq, label=percent(Freq, accuracy = 0.1)), position= position_stack(vjust = 0.5), fontface = "bold", size=5)+
+  coord_flip()+
+  theme_base()+
+   theme(legend.position="bottom", plot.caption = element_text(hjust =1))
+```
+
+Comparacion de las edades de los estudiantes y la tasa de aprobación de los estudiantes, se puede ver que la tasa de aprobación va bajando a medida de que las edades de los estudiantes aumentan, con excepción de los estudiantes que tienen 20 años, los cuales presentan la tasa de aprobacion más alta de todos los estudiantes.
+
+```{r echo=FALSE, fig.align = 'center', message = FALSE}
+TABLA_income=as.data.frame(prop.table(table(df$age,df$aprobado),1))
+
+ ggplot(TABLA_income, aes(x=Var1, y=Freq, fill=Var2))+
+  geom_bar(stat = "identity", color="black")+
+   labs(x="Edad",y="Frecuencia", fill="Tasa de aprobación")+
+  scale_fill_brewer(palette = "Blues")+
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.2), labels = percent)+
+  geom_text(aes(x=Var1, y=Freq, label=percent(Freq, accuracy = 0.1)), position= position_stack(vjust = 0.5), fontface = "bold", size=5)+
+  coord_flip()+
+  theme_base()+
+   theme(legend.position="bottom", plot.caption = element_text(hjust =1))
+```
+
+Comparación de la tasa de aprobación de los estudiantes y la ausencia de los estudiantes a las clases, se observa que la tasa de aprobación va bajando a medida de que las ausencias aumentan.
+
+```{r echo=FALSE, fig.align = 'center', message = FALSE}
+TABLA_income=as.data.frame(prop.table(table(df$absences,df$aprobado),1))
+
+ ggplot(TABLA_income, aes(x=Var1, y=Freq, fill=Var2))+
+  geom_bar(stat = "identity", color="black")+
+   labs(x="Ausencias",y="Frecuencia", fill="Tasa de aprobación")+
+  scale_fill_brewer(palette = "Blues")+
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.2), labels = percent)+
+  geom_text(aes(x=Var1, y=Freq, label=percent(Freq, accuracy = 0.1)), position= position_stack(vjust = 0.5), fontface = "bold", size=5)+
+  coord_flip()+
+  theme_base()+
+   theme(legend.position="bottom", plot.caption = element_text(hjust =1))
+```
+
+### Conclusiones
+
+#### - Como conclusión del estudio de las variables y de las comparaciones de las variables provistas para la investigación del ICFES para la revisión de los factores de éxito en el desempeño en un curso de matemáticas de estudiantes de bachillerato, obtuvimos que la variable que mas influye en la aprobacion de los estudiantes es el número de ausencias a clases, por lo cual se deberia evitar la ausencia por parte de los estudiantes a las clases para que asi tengan más oportunidades de sacar una mayor nota en la asignatura.
+
+#### - Otra de las variables que más afecta los resultados de la prueba es que si los estudiantes tienen internet en casa, haciendo que los estudiantes que si tienen internet en casa tengan un mayor resultado y una mayor tasa de aprobación que los estudiantes que no tienen internet en casa.
+
+#### - Tambien otra de las variables que más afecta los resultados es la edad de los estudiantes, siendo que entre más jovenes tengan una mayor tasa de aprobación y un mayor resultado, con excepción de los estudiantes que tienen 20 años.
+
+#### - Las otras variables que se presentan no tienen una influencia tan importante sobre los resultados de la nota final en la asignatura como las anteriormente mencionadas.
+
+
+
